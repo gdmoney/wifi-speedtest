@@ -1,0 +1,5 @@
+# One test laptop per line. Use the laptop's name (System Settings > General > Sharing)
+# with .local on the end, or its IP address.
+wifi-test-01.local
+wifi-test-02.local
+wifi-test-03.local
