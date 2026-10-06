@@ -1,5 +1,5 @@
 #!/bin/bash
-# Usage:  ./speedtest_all.sh "Room name"
+# Usage:  ./speedtest_all.sh "Room name"     (or run it with no argument and it asks)
 #
 # Runs Ookla speedtest on every laptop in hosts.txt at the same time, saves a
 # CSV in results/, and appends the rows to the Google Sheet.
@@ -9,7 +9,8 @@ cd "$(dirname "$0")"
 SSH_USER="CHANGE_ME"      # login username on the test laptops (same on all)
 SHEET_URL="CHANGE_ME"     # Apps Script web app URL (see README, ends in /exec)
 
-LOCATION="${1:?Usage: $0 \"Room name\"}"
+LOCATION="${1:-}"
+while [[ -z "$LOCATION" ]]; do read -rp "Room / location for this test: " LOCATION; done
 HOSTS=$(grep -v '^#' hosts.txt | grep -v '^[[:space:]]*$')
 COUNT=$(echo "$HOSTS" | wc -l | tr -d ' ')
 NOW=$(date '+%Y-%m-%d %H:%M:%S')

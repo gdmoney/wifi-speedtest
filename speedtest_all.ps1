@@ -1,9 +1,10 @@
-# Usage:  .\speedtest_all.ps1 "Room name"
+# Usage:  .\speedtest_all.ps1 "Room name"     (or run it with no argument and it asks)
 #
 # Windows version of speedtest_all.sh. Runs Ookla speedtest on every MacBook in
 # hosts.txt at the same time, saves a CSV in results\, and appends the rows to
 # the Google Sheet. Needs only what Windows 10/11 already has (OpenSSH client).
-param([Parameter(Mandatory = $true)][string]$Location)
+param([string]$Location)
+while (-not $Location) { $Location = Read-Host "Room / location for this test" }
 
 $SshUser  = "CHANGE_ME"    # login username on the test MacBooks (same on all)
 $SheetUrl = "CHANGE_ME"    # Apps Script web app URL (see README, ends in /exec)

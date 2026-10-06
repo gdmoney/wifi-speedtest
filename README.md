@@ -51,12 +51,14 @@ this once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 
 Mac:
 ```
-~/wifi-speedtest/speedtest_all.sh "Ballroom A"
+~/wifi-speedtest/speedtest_all.sh
 ```
 Windows:
 ```
-C:\wifi-speedtest\speedtest_all.ps1 "Ballroom A"
+C:\wifi-speedtest\speedtest_all.ps1
 ```
+It asks for the room / location, then runs. To skip the question, pass the
+room name on the command line instead: `speedtest_all.sh "Ballroom A"`.
 
 It prints each MacBook's result, appends the rows to the sheet, and keeps a
 copy in `results/<trial id>.csv`. All MacBooks in a run share one Trial ID
