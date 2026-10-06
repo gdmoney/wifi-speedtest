@@ -1,6 +1,6 @@
-# Usage:  .\speedtest_all.ps1 "Room name"     (or run it with no argument and it asks)
+# Usage:  .\speedtest.ps1 "Room name"     (or run it with no argument and it asks)
 #
-# Windows version of speedtest_all.sh. Runs Ookla speedtest on every MacBook in
+# Windows version of speedtest.sh. Runs Ookla speedtest on every MacBook in
 # hosts.txt at the same time, saves a CSV in results\, and appends the rows to
 # the Google Sheet. Needs only what Windows 10/11 already has (OpenSSH client).
 param([string]$Location)

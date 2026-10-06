@@ -2,7 +2,7 @@
 
 One script. Runs speedtest on all the test MacBooks at once and appends the
 results to the [Google Sheet](https://docs.google.com/spreadsheets/d/1QH7NN4goNkNZAscmMheX1F84q-xraeevtTB_Dl4z620).
-Run it from a Mac (`speedtest_all.sh`) or a Windows laptop (`speedtest_all.ps1`);
+Run it from a Mac (`speedtest.sh`) or a Windows laptop (`speedtest.ps1`);
 they do the same thing.
 
 ## Set up each test MacBook (once)
@@ -33,7 +33,7 @@ password. You'll type each MacBook's password once; after that, no prompts.
 
 **Mac** (Terminal):
 ```
-chmod +x ~/wifi-speedtest/speedtest_all.sh
+chmod +x ~/wifi-speedtest/speedtest.sh
 for h in $(grep -v '^#' ~/wifi-speedtest/hosts.txt); do ssh-copy-id USERNAME@$h; done
 ```
 
@@ -51,14 +51,14 @@ this once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 
 Mac:
 ```
-~/wifi-speedtest/speedtest_all.sh
+~/wifi-speedtest/speedtest.sh
 ```
 Windows:
 ```
-C:\wifi-speedtest\speedtest_all.ps1
+C:\wifi-speedtest\speedtest.ps1
 ```
 It asks for the room / location, then runs. To skip the question, pass the
-room name on the command line instead: `speedtest_all.sh "Ballroom A"`.
+room name on the command line instead: `speedtest.sh "Ballroom A"`.
 
 It prints each MacBook's result, appends the rows to the sheet, and keeps a
 copy in `results/<trial id>.csv`. All MacBooks in a run share one Trial ID

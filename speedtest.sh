@@ -1,5 +1,5 @@
 #!/bin/bash
-# Usage:  ./speedtest_all.sh "Room name"     (or run it with no argument and it asks)
+# Usage:  ./speedtest.sh "Room name"     (or run it with no argument and it asks)
 #
 # Runs Ookla speedtest on every laptop in hosts.txt at the same time, saves a
 # CSV in results/, and appends the rows to the Google Sheet.
