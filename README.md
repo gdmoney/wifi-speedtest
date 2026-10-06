@@ -59,8 +59,8 @@ C:\wifi-speedtest\speedtest_all.ps1 "Ballroom A"
 ```
 
 It prints each MacBook's result, appends the rows to the sheet, and keeps a
-copy in `results/<timestamp>.csv`. All MacBooks in a run share one Trial ID
-(the timestamp); type it into the Summary tab to see the stats.
+copy in `results/<trial id>.csv`. All MacBooks in a run share one Trial ID
+(month, day and time, e.g. `1006-092003`); type it into the Summary tab to see the stats.
 
 ## If something fails
 

@@ -13,7 +13,7 @@ LOCATION="${1:?Usage: $0 \"Room name\"}"
 HOSTS=$(grep -v '^#' hosts.txt | grep -v '^[[:space:]]*$')
 COUNT=$(echo "$HOSTS" | wc -l | tr -d ' ')
 NOW=$(date '+%Y-%m-%d %H:%M:%S')
-TRIAL=$(date '+%Y%m%d-%H%M%S')
+TRIAL=$(date '+%m%d-%H%M%S')          # e.g. 1006-092003 (short enough for chart labels)
 OUT="results/$TRIAL.csv"
 mkdir -p results
 

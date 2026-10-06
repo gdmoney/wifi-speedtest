@@ -12,7 +12,7 @@ Set-Location $PSScriptRoot
 $machines = Get-Content hosts.txt | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch '^#' }
 $count = @($machines).Count
 $now   = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-$trial = Get-Date -Format 'yyyyMMdd-HHmmss'
+$trial = Get-Date -Format 'MMdd-HHmmss'    # e.g. 1006-092003 (short enough for chart labels)
 New-Item -ItemType Directory -Force results | Out-Null
 $out = "results\$trial.csv"
 
