@@ -1,7 +1,7 @@
 # WiFi speed test
 
 One script. Runs speedtest on all the test laptops at once and appends the
-results to the Google Sheet.
+results to the [Google Sheet](https://docs.google.com/spreadsheets/d/1QH7NN4goNkNZAscmMheX1F84q-xraeevtTB_Dl4z620).
 
 ## Set up each test laptop (once)
 
