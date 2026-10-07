@@ -6,24 +6,31 @@
 param([string]$Location)
 while (-not $Location) { $Location = Read-Host "Room / location for this test" }
 
-$SshUser  = "CHANGE_ME"    # login username on the test MacBooks (same on all)
-$SheetUrl = "CHANGE_ME"    # Apps Script web app URL (see README, ends in /exec)
-
 Set-Location $PSScriptRoot
-$machines = Get-Content hosts.txt | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch '^#' }
-$count = @($machines).Count
+if (-not (Test-Path config.txt)) { Write-Host "Missing config.txt - copy config.example.txt to config.txt and fill it in."; exit 1 }
+$cfg = @{}
+Get-Content config.txt | Where-Object { $_ -match '^\s*([^#=]+)=(.*)$' } | ForEach-Object { $cfg[$matches[1].Trim()] = $matches[2].Trim() }
+$SshUser  = $cfg['SSH_USER']
+$SheetUrl = $cfg['SHEET_URL']
+if (-not $SshUser -or -not $SheetUrl -or $SshUser -eq 'CHANGE_ME' -or $SheetUrl -eq 'CHANGE_ME') { Write-Host "Fill in SSH_USER and SHEET_URL in config.txt."; exit 1 }
+
+$machines = @(Get-Content hosts.txt | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch '^#' })
+$count = $machines.Count
+if ($count -eq 0) { Write-Host "hosts.txt has no laptops in it."; exit 1 }
+$inv = [cultureinfo]::InvariantCulture    # always write 123.45, never 123,45
 $now   = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 $trial = Get-Date -Format 'MMdd-HHmmss'    # e.g. 1006-092003 (short enough for chart labels)
 New-Item -ItemType Directory -Force results | Out-Null
 $out = "results\$trial.csv"
 
-# Start all MacBooks at once.
+# Start all MacBooks at once; give up on any that are still running after 3 minutes.
 $remote = 'PATH=/opt/homebrew/bin:/usr/local/bin:$PATH speedtest --accept-license --accept-gdpr -f json'
 $procs = foreach ($m in $machines) {
   Start-Process ssh -ArgumentList "-o ConnectTimeout=8 -o BatchMode=yes $SshUser@$m `"$remote`"" `
     -NoNewWindow -PassThru -RedirectStandardOutput "results\.$m.json" -RedirectStandardError "results\.$m.err"
 }
-$procs | Wait-Process
+$procs | Wait-Process -Timeout 180 -ErrorAction SilentlyContinue
+$procs | Where-Object { -not $_.HasExited } | Stop-Process -Force
 
 # One CSV row per MacBook.
 $rows = foreach ($m in $machines) {
@@ -35,15 +42,15 @@ $rows = foreach ($m in $machines) {
   try {
     $d = Get-Content "results\.$m.json" -Raw | ConvertFrom-Json
     if (-not $d.download) { throw 'no result' }
-    $row['Download (Mbps)'] = '{0:F2}' -f ($d.download.bandwidth * 8 / 1e6)
-    $row['Upload (Mbps)']   = '{0:F2}' -f ($d.upload.bandwidth * 8 / 1e6)
-    $row['Ping']            = '{0:F1}' -f $d.ping.latency
-    $row['Jitter']          = $d.ping.jitter
+    $row['Download (Mbps)'] = ($d.download.bandwidth * 8 / 1e6).ToString('F2', $inv)
+    $row['Upload (Mbps)']   = ($d.upload.bandwidth * 8 / 1e6).ToString('F2', $inv)
+    $row['Ping']            = ([double]$d.ping.latency).ToString('F1', $inv)
+    $row['Jitter']          = ([double]$d.ping.jitter).ToString('F1', $inv)
     $row['Result URL']      = $d.result.url
     Write-Host "[$m] OK  $($row['Download (Mbps)']) down / $($row['Upload (Mbps)']) up Mbps"
   } catch {
     $err = (Get-Content "results\.$m.err" -Raw -ErrorAction SilentlyContinue) -replace '\s+', ' '
-    if (-not $err -or -not $err.Trim()) { $err = 'speedtest returned no result' }
+    if (-not $err -or -not $err.Trim()) { $err = 'speedtest returned no result (or timed out)' }
     $row['Notes'] = $err.Trim()
     Write-Host "[$m] FAILED: $($row['Notes'])"
   }

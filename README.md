@@ -24,9 +24,12 @@ The URL is long and random; anyone who has it could append rows, nothing more.
 
 Both versions: put this folder somewhere (e.g. `~/wifi-speedtest` or
 `C:\wifi-speedtest`), edit `hosts.txt` with one test MacBook per line as
-`name.local` (or an IP), and set the two values at the top of the script:
-`SSH_USER` / `$SshUser` (login name on the MacBooks) and `SHEET_URL` /
-`$SheetUrl` (from step 3 above).
+`name.local` (or an IP), then copy `config.example.txt` to `config.txt` and
+fill in `SSH_USER` (login name on the MacBooks) and `SHEET_URL` (from step 3
+above). `config.txt` is ignored by git so the sheet URL never gets committed.
+
+On a Mac control laptop, the script needs `python3`. If running it pops up an
+"install the command line developer tools?" dialog, click Install once.
 
 Then copy your SSH key to each MacBook so the script can log in without a
 password. You'll type each MacBook's password once; after that, no prompts.
@@ -41,7 +44,7 @@ for h in $(grep -v '^#' ~/wifi-speedtest/hosts.txt); do ssh-copy-id USERNAME@$h;
 ```
 ssh-keygen -t ed25519            # press Enter at every prompt; skip if you already have a key
 foreach ($h in (Get-Content C:\wifi-speedtest\hosts.txt | ? { $_ -notmatch '^#' -and $_.Trim() })) {
-  type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh USERNAME@$h "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+  type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh USERNAME@$h "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
 }
 ```
 If PowerShell refuses to run the script ("running scripts is disabled"), run
@@ -67,7 +70,10 @@ copy in `results/<trial id>.csv`. All MacBooks in a run share one Trial ID
 ## If something fails
 
 - A row with blank numbers and an error in Notes means that MacBook couldn't be
-  reached or speedtest isn't installed on it. The rest of the run is fine.
+  reached, speedtest isn't installed on it, or it took longer than 3 minutes.
+  The rest of the run is fine.
+- "Host key verification failed" in Notes: the MacBook was reinstalled or
+  renamed. Run `ssh USERNAME@name.local` once by hand and answer `yes`.
 - `name.local` not found: the MacBook is on a different subnet. Put its IP in
   `hosts.txt` instead (System Settings > Wi-Fi > Details).
 - "Permission denied" in Notes: the SSH key wasn't copied to that MacBook, or

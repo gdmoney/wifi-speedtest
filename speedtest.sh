@@ -6,12 +6,14 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-SSH_USER="CHANGE_ME"      # login username on the test laptops (same on all)
-SHEET_URL="CHANGE_ME"     # Apps Script web app URL (see README, ends in /exec)
+[[ -f config.txt ]] || { echo "Missing config.txt - copy config.example.txt to config.txt and fill it in."; exit 1; }
+source config.txt
+[[ "$SSH_USER" == CHANGE_ME || "$SHEET_URL" == CHANGE_ME ]] && { echo "Fill in SSH_USER and SHEET_URL in config.txt."; exit 1; }
 
 LOCATION="${1:-}"
 while [[ -z "$LOCATION" ]]; do read -rp "Room / location for this test: " LOCATION; done
-HOSTS=$(grep -v '^#' hosts.txt | grep -v '^[[:space:]]*$')
+HOSTS=$(grep -v '^#' hosts.txt | grep -v '^[[:space:]]*$' || true)
+[[ -z "$HOSTS" ]] && { echo "hosts.txt has no laptops in it."; exit 1; }
 COUNT=$(echo "$HOSTS" | wc -l | tr -d ' ')
 NOW=$(date '+%Y-%m-%d %H:%M:%S')
 TRIAL=$(date '+%m%d-%H%M%S')          # e.g. 1006-092003 (short enough for chart labels)
@@ -20,13 +22,17 @@ mkdir -p results
 
 echo "Date / Time,Location,Trial ID,Concurrent Clients,Device Type,Device ID,Download (Mbps),Upload (Mbps),Ping,Jitter,Test Site,Result URL,Notes" > "$OUT"
 
-# Start all laptops at once.
+# Start all laptops at once; give up on any that are still running after 3 minutes.
+PIDS=()
 for h in $HOSTS; do
   ssh -o ConnectTimeout=8 -o BatchMode=yes "$SSH_USER@$h" \
     'PATH=/opt/homebrew/bin:/usr/local/bin:$PATH speedtest --accept-license --accept-gdpr -f json' \
     > "results/.$h.json" 2> "results/.$h.err" &
+  PIDS+=($!)
 done
-wait
+( sleep 180; kill "${PIDS[@]}" 2>/dev/null ) 2>/dev/null & KILLER=$!
+for p in "${PIDS[@]}"; do wait "$p" || true; done
+kill "$KILLER" 2>/dev/null || true
 
 # One CSV row per laptop.
 for h in $HOSTS; do
@@ -39,11 +45,11 @@ try:
     row[6]  = f"{d['download']['bandwidth'] * 8 / 1e6:.2f}"
     row[7]  = f"{d['upload']['bandwidth'] * 8 / 1e6:.2f}"
     row[8]  = f"{d['ping']['latency']:.1f}"
-    row[9]  = d['ping'].get('jitter', '')
+    row[9]  = f"{d['ping'].get('jitter', 0):.1f}"
     row[11] = d.get('result', {}).get('url', '')
     print(f"[{host}] OK  {row[6]} down / {row[7]} up Mbps", file=sys.stderr)
 except Exception:
-    err = open(errfile).read().strip().replace("\n", " ") or "speedtest returned no result"
+    err = open(errfile).read().strip().replace("\n", " ") or "speedtest returned no result (or timed out)"
     row[12] = err
     print(f"[{host}] FAILED: {err}", file=sys.stderr)
 csv.writer(sys.stdout).writerow(row)
@@ -53,5 +59,5 @@ done
 
 # Append to the Google Sheet.
 echo
-echo "Sheet: $(curl -sS -L -X POST --data-binary @"$OUT" "$SHEET_URL")"
+echo "Sheet: $(curl -sS -L -X POST -H 'Content-Type: text/plain' --data-binary @"$OUT" "$SHEET_URL")"
 echo "Saved copy: $OUT"
