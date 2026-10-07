@@ -89,9 +89,9 @@ C:\Users\<username>\Documents\GitHub\wifi-speedtest\speedtest.ps1
 It asks for the room / location, then runs. To skip the question, pass the
 room name on the command line instead: `speedtest.sh "Ballroom A"`.
 
-It prints each MacBook's result, appends the rows to the sheet, and keeps a
-copy in `results/<trial id>.csv`. All MacBooks in a run share one Trial ID
-(month, day and time, e.g. `1006-092003`); type it into the Summary tab to see the stats.
+It prints each MacBook's result and appends the rows to the sheet. All
+MacBooks in a run share one Trial ID (month, day and time, e.g. `1006-092003`);
+type it into the Summary tab to see the stats.
 
 ## If something fails
 
@@ -107,5 +107,4 @@ copy in `results/<trial id>.csv`. All MacBooks in a run share one Trial ID
   `SSH_USER` is wrong. Redo the key step for that machine.
 - Sheet line shows `ERROR: ...` instead of "added N row(s)": the message says
   what's wrong (e.g. the tab isn't named `Test Log`). Any other error there
-  means the `SHEET_URL` in `config.txt` is wrong. The CSV copy in `results/`
-  has the data either way.
+  means the `SHEET_URL` in `config.txt` is wrong.

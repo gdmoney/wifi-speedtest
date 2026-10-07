@@ -1,8 +1,8 @@
 #!/bin/bash
 # Usage:  ./speedtest.sh "Room name"     (or run it with no argument and it asks)
 #
-# Runs Ookla speedtest on every laptop in hosts.txt at the same time, saves a
-# CSV in results/, and appends the rows to the Google Sheet.
+# Runs Ookla speedtest on every laptop in hosts.txt at the same time and
+# appends the results to the Google Sheet.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -18,8 +18,8 @@ HOSTS=$(grep -v '^#' hosts.txt | grep -v '^[[:space:]]*$' || true)
 COUNT=$(echo "$HOSTS" | wc -l | tr -d ' ')
 NOW=$(date '+%Y-%m-%d %H:%M:%S')
 TRIAL=$(date '+%m%d-%H%M%S')          # e.g. 1006-092003 (short enough for chart labels)
-OUT="results/$TRIAL.csv"
-mkdir -p results
+TMP=$(mktemp -d)
+OUT="$TMP/rows.csv"
 
 echo "Date / Time,Location,Trial ID,Concurrent Clients,Device ID,Download (Mbps),Upload (Mbps),Idle Ping (ms),Loaded Ping Down (ms),Loaded Ping Up (ms),Result URL,Notes" > "$OUT"
 
@@ -28,7 +28,7 @@ PIDS=()
 for h in $HOSTS; do
   ssh -o ConnectTimeout=8 -o BatchMode=yes "$SSH_USER@$h" \
     'PATH=/opt/homebrew/bin:/usr/local/bin:$PATH speedtest --accept-license --accept-gdpr -f json' \
-    > "results/.$h.json" 2> "results/.$h.err" &
+    > "$TMP/$h.json" 2> "$TMP/$h.err" &
   PIDS+=($!)
 done
 ( sleep 180; kill "${PIDS[@]}" 2>/dev/null ) 2>/dev/null & KILLER=$!
@@ -37,7 +37,7 @@ kill "$KILLER" 2>/dev/null || true
 
 # One CSV row per laptop.
 for h in $HOSTS; do
-  python3 - "$h" "results/.$h.json" "results/.$h.err" "$NOW" "$LOCATION" "$TRIAL" "$COUNT" >> "$OUT" <<'PY'
+  python3 - "$h" "$TMP/$h.json" "$TMP/$h.err" "$NOW" "$LOCATION" "$TRIAL" "$COUNT" >> "$OUT" <<'PY'
 import csv, json, sys
 host, jsonfile, errfile, now, location, trial, count = sys.argv[1:]
 row = [now, location, trial, count, host, "", "", "", "", "", "", ""]
@@ -57,10 +57,9 @@ except Exception:
     print(f"[{host}] FAILED: {err}", file=sys.stderr)
 csv.writer(sys.stdout).writerow(row)
 PY
-  rm -f "results/.$h.json" "results/.$h.err"
 done
 
 # Append to the Google Sheet.
 echo
 echo "Sheet: $(curl -sS -L -H 'Content-Type: text/plain' --data-binary @"$OUT" "$SHEET_URL")"
-echo "Saved copy: $OUT"
+rm -rf "$TMP"
