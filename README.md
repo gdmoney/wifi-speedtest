@@ -26,11 +26,30 @@ The URL stays the same; without this step the sheet keeps running the old code.
 
 ## Set up the control laptop (once)
 
-Both versions: put this folder somewhere (e.g. `~/wifi-speedtest` or
-`C:\wifi-speedtest`), edit `hosts.txt` with one test MacBook per line as
-`name.local` (or an IP), then copy `config.example.txt` to `config.txt` and
-fill in `SSH_USER` (login name on the MacBooks) and `SHEET_URL` (from step 3
-above). `config.txt` is ignored by git so the sheet URL never gets committed.
+Both versions:
+
+1. Clone this repo. The rest of this README assumes it lands at
+   `~/wifi-speedtest` (Mac) or `C:\wifi-speedtest` (Windows); adjust the paths
+   if you put it elsewhere.
+
+   Mac:
+   ```
+   git clone https://github.com/gdmoney/wifi-speedtest.git ~/wifi-speedtest
+   ```
+   Windows (PowerShell):
+   ```
+   git clone https://github.com/gdmoney/wifi-speedtest.git C:\wifi-speedtest
+   ```
+   Or in GitHub Desktop: File > Clone repository > URL, paste the URL above and
+   set Local path to one of those folders.
+2. Edit `hosts.txt`: one test MacBook per line as `name.local` (or an IP).
+3. Make a copy of `config.example.txt` named `config.txt`, in the same folder.
+   Open `config.txt` and replace the two `CHANGE_ME` values: `SSH_USER` is the
+   login name on the MacBooks, `SHEET_URL` is the URL from the sheet step above.
+
+   The scripts read `config.txt` only. Leave `config.example.txt` as it is; it's
+   the template, and it's the one that gets committed. `config.txt` is ignored
+   by git so the sheet URL never ends up on GitHub.
 
 On a Mac control laptop, the script needs `python3`. If running it pops up an
 "install the command line developer tools?" dialog, click Install once.
