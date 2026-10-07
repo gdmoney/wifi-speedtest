@@ -21,7 +21,7 @@ TRIAL=$(date '+%m%d-%H%M%S')          # e.g. 1006-092003 (short enough for chart
 OUT="results/$TRIAL.csv"
 mkdir -p results
 
-echo "Date / Time,Location,Trial ID,Concurrent Clients,Device Type,Device ID,Download (Mbps),Upload (Mbps),Idle Ping (ms),Loaded Ping Down (ms),Loaded Ping Up (ms),Test Site,Result URL,Notes" > "$OUT"
+echo "Date / Time,Location,Trial ID,Concurrent Clients,Device ID,Download (Mbps),Upload (Mbps),Idle Ping (ms),Loaded Ping Down (ms),Loaded Ping Up (ms),Result URL,Notes" > "$OUT"
 
 # Start all laptops at once; give up on any that are still running after 3 minutes.
 PIDS=()
@@ -40,20 +40,20 @@ for h in $HOSTS; do
   python3 - "$h" "results/.$h.json" "results/.$h.err" "$NOW" "$LOCATION" "$TRIAL" "$COUNT" >> "$OUT" <<'PY'
 import csv, json, sys
 host, jsonfile, errfile, now, location, trial, count = sys.argv[1:]
-row = [now, location, trial, count, "Laptop", host, "", "", "", "", "", "https://www.speedtest.net/", "", ""]
+row = [now, location, trial, count, host, "", "", "", "", "", "", ""]
 def ms(v): return f"{v:.1f}" if v is not None else ""
 try:
     d = json.load(open(jsonfile))
-    row[6]  = f"{d['download']['bandwidth'] * 8 / 1e6:.2f}"
-    row[7]  = f"{d['upload']['bandwidth'] * 8 / 1e6:.2f}"
-    row[8]  = ms(d['ping'].get('latency'))
-    row[9]  = ms(d['download'].get('latency', {}).get('iqm'))   # latency while downloading
-    row[10] = ms(d['upload'].get('latency', {}).get('iqm'))     # latency while uploading
-    row[12] = d.get('result', {}).get('url', '')
-    print(f"[{host}] OK  {row[6]} down / {row[7]} up Mbps", file=sys.stderr)
+    row[5]  = f"{d['download']['bandwidth'] * 8 / 1e6:.2f}"
+    row[6]  = f"{d['upload']['bandwidth'] * 8 / 1e6:.2f}"
+    row[7]  = ms(d['ping'].get('latency'))
+    row[8]  = ms(d['download'].get('latency', {}).get('iqm'))   # latency while downloading
+    row[9]  = ms(d['upload'].get('latency', {}).get('iqm'))     # latency while uploading
+    row[10] = d.get('result', {}).get('url', '')
+    print(f"[{host}] OK  {row[5]} down / {row[6]} up Mbps", file=sys.stderr)
 except Exception:
     err = open(errfile).read().strip().replace("\n", " ") or "speedtest returned no result (or timed out)"
-    row[13] = err
+    row[11] = err
     print(f"[{host}] FAILED: {err}", file=sys.stderr)
 csv.writer(sys.stdout).writerow(row)
 PY

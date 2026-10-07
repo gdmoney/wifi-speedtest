@@ -5,7 +5,7 @@ function doPost(e) {
     if (!sheet) throw new Error('no tab named "Test Log"');
     var rows = Utilities.parseCsv(e.postData.contents).slice(1);   // drop CSV header
     rows.forEach(function (r) {
-      if (r.length !== 14) throw new Error('expected 14 columns, got ' + r.length);
+      if (r.length !== 12) throw new Error('expected 12 columns, got ' + r.length);
     });
     rows.forEach(function (r) { sheet.appendRow(r); });
     return ContentService.createTextOutput('added ' + rows.length + ' row(s)');

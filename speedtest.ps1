@@ -36,9 +36,8 @@ $procs | Where-Object { -not $_.HasExited } | Stop-Process -Force
 $rows = foreach ($m in $machines) {
   $row = [ordered]@{
     'Date / Time' = $now; 'Location' = $Location; 'Trial ID' = $trial; 'Concurrent Clients' = $count
-    'Device Type' = 'Laptop'; 'Device ID' = $m; 'Download (Mbps)' = ''; 'Upload (Mbps)' = ''
-    'Idle Ping (ms)' = ''; 'Loaded Ping Down (ms)' = ''; 'Loaded Ping Up (ms)' = ''
-    'Test Site' = 'https://www.speedtest.net/'; 'Result URL' = ''; 'Notes' = ''
+    'Device ID' = $m; 'Download (Mbps)' = ''; 'Upload (Mbps)' = ''
+    'Idle Ping (ms)' = ''; 'Loaded Ping Down (ms)' = ''; 'Loaded Ping Up (ms)' = ''; 'Result URL' = ''; 'Notes' = ''
   }
   try {
     $d = Get-Content "results\.$m.json" -Raw | ConvertFrom-Json
