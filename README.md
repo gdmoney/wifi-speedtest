@@ -20,6 +20,10 @@ they do the same thing.
 
 The URL is long and random; anyone who has it could append rows, nothing more.
 
+If `sheet_script.gs` changes later, paste the new version in and then
+Deploy > Manage deployments > edit (pencil) > Version: **New version** > Deploy.
+The URL stays the same; without this step the sheet keeps running the old code.
+
 ## Set up the control laptop (once)
 
 Both versions: put this folder somewhere (e.g. `~/wifi-speedtest` or
@@ -78,5 +82,7 @@ copy in `results/<trial id>.csv`. All MacBooks in a run share one Trial ID
   `hosts.txt` instead (System Settings > Wi-Fi > Details).
 - "Permission denied" in Notes: the SSH key wasn't copied to that MacBook, or
   `SSH_USER` is wrong. Redo the key step for that machine.
-- Sheet line shows an error instead of "added N row(s)": check the sheet URL.
-  The CSV copy in `results/` has the data either way.
+- Sheet line shows `ERROR: ...` instead of "added N row(s)": the message says
+  what's wrong (e.g. the tab isn't named `Test Log`). Any other error there
+  means the `SHEET_URL` in `config.txt` is wrong. The CSV copy in `results/`
+  has the data either way.
