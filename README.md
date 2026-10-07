@@ -28,20 +28,15 @@ The URL stays the same; without this step the sheet keeps running the old code.
 
 Both versions:
 
-1. Clone this repo. The rest of this README assumes it lands at
-   `~/wifi-speedtest` (Mac) or `C:\wifi-speedtest` (Windows); adjust the paths
-   if you put it elsewhere.
+1. Clone this repo. In GitHub Desktop: File > Clone repository > URL, paste
+   `https://github.com/gdmoney/wifi-speedtest.git` and keep the default Local
+   path. It lands at:
 
-   Mac:
-   ```
-   git clone https://github.com/gdmoney/wifi-speedtest.git ~/wifi-speedtest
-   ```
-   Windows (PowerShell):
-   ```
-   git clone https://github.com/gdmoney/wifi-speedtest.git C:\wifi-speedtest
-   ```
-   Or in GitHub Desktop: File > Clone repository > URL, paste the URL above and
-   set Local path to one of those folders.
+   - Mac: `/Users/<username>/Documents/GitHub/wifi-speedtest`
+   - Windows: `C:\Users\<username>\Documents\GitHub\wifi-speedtest`
+
+   `<username>` is your login name on that laptop. The rest of this README
+   uses these paths; adjust them if you cloned somewhere else.
 2. Edit `hosts.txt`: one test MacBook per line as `name.local` (or an IP).
 3. Make a copy of `config.example.txt` named `config.txt`, in the same folder.
    Open `config.txt` and replace the two `CHANGE_ME` values: `SSH_USER` is the
@@ -59,14 +54,14 @@ password. You'll type each MacBook's password once; after that, no prompts.
 
 **Mac** (Terminal):
 ```
-chmod +x ~/wifi-speedtest/speedtest.sh
-for h in $(grep -v '^#' ~/wifi-speedtest/hosts.txt); do ssh-copy-id USERNAME@$h; done
+chmod +x /Users/<username>/Documents/GitHub/wifi-speedtest/speedtest.sh
+for h in $(grep -v '^#' /Users/<username>/Documents/GitHub/wifi-speedtest/hosts.txt); do ssh-copy-id USERNAME@$h; done
 ```
 
 **Windows** (PowerShell):
 ```
 ssh-keygen -t ed25519            # press Enter at every prompt; skip if you already have a key
-foreach ($h in (Get-Content C:\wifi-speedtest\hosts.txt | ? { $_ -notmatch '^#' -and $_.Trim() })) {
+foreach ($h in (Get-Content C:\Users\<username>\Documents\GitHub\wifi-speedtest\hosts.txt | ? { $_ -notmatch '^#' -and $_.Trim() })) {
   type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh USERNAME@$h "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
 }
 ```
@@ -77,11 +72,11 @@ this once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 
 Mac:
 ```
-~/wifi-speedtest/speedtest.sh
+/Users/<username>/Documents/GitHub/wifi-speedtest/speedtest.sh
 ```
 Windows:
 ```
-C:\wifi-speedtest\speedtest.ps1
+C:\Users\<username>\Documents\GitHub\wifi-speedtest\speedtest.ps1
 ```
 It asks for the room / location, then runs. To skip the question, pass the
 room name on the command line instead: `speedtest.sh "Ballroom A"`.
