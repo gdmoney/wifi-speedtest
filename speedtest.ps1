@@ -45,7 +45,7 @@ $rows = foreach ($m in $machines) {
     $row['Download (Mbps)'] = ($d.download.bandwidth * 8 / 1e6).ToString('F2', $inv)
     $row['Upload (Mbps)']   = ($d.upload.bandwidth * 8 / 1e6).ToString('F2', $inv)
     $row['Ping']            = ([double]$d.ping.latency).ToString('F1', $inv)
-    $row['Jitter']          = ([double]$d.ping.jitter).ToString('F1', $inv)
+    if ($null -ne $d.ping.jitter) { $row['Jitter'] = ([double]$d.ping.jitter).ToString('F1', $inv) }
     $row['Result URL']      = $d.result.url
     Write-Host "[$m] OK  $($row['Download (Mbps)']) down / $($row['Upload (Mbps)']) up Mbps"
   } catch {
@@ -62,7 +62,7 @@ $rows | Export-Csv $out -NoTypeInformation -Encoding UTF8
 # Append to the Google Sheet.
 Write-Host ""
 try {
-  $resp = Invoke-RestMethod -Uri $SheetUrl -Method Post -ContentType 'text/plain' -Body (Get-Content $out -Raw)
+  $resp = Invoke-RestMethod -Uri $SheetUrl -Method Post -ContentType 'text/plain; charset=utf-8' -Body (Get-Content $out -Raw)
   Write-Host "Sheet: $resp"
 } catch {
   Write-Host "Sheet: FAILED - $($_.Exception.Message)"

@@ -7,8 +7,9 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 [[ -f config.txt ]] || { echo "Missing config.txt - copy config.example.txt to config.txt and fill it in."; exit 1; }
-source config.txt
-[[ "$SSH_USER" == CHANGE_ME || "$SHEET_URL" == CHANGE_ME ]] && { echo "Fill in SSH_USER and SHEET_URL in config.txt."; exit 1; }
+SSH_USER=$(sed -n 's/^SSH_USER=//p' config.txt | tr -d '\r' | head -1)
+SHEET_URL=$(sed -n 's/^SHEET_URL=//p' config.txt | tr -d '\r' | head -1)
+[[ -z "$SSH_USER" || -z "$SHEET_URL" || "$SSH_USER" == CHANGE_ME || "$SHEET_URL" == CHANGE_ME ]] && { echo "Fill in SSH_USER and SHEET_URL in config.txt."; exit 1; }
 
 LOCATION="${1:-}"
 while [[ -z "$LOCATION" ]]; do read -rp "Room / location for this test: " LOCATION; done
@@ -45,7 +46,7 @@ try:
     row[6]  = f"{d['download']['bandwidth'] * 8 / 1e6:.2f}"
     row[7]  = f"{d['upload']['bandwidth'] * 8 / 1e6:.2f}"
     row[8]  = f"{d['ping']['latency']:.1f}"
-    row[9]  = f"{d['ping'].get('jitter', 0):.1f}"
+    row[9]  = f"{d['ping']['jitter']:.1f}" if d['ping'].get('jitter') is not None else ''
     row[11] = d.get('result', {}).get('url', '')
     print(f"[{host}] OK  {row[6]} down / {row[7]} up Mbps", file=sys.stderr)
 except Exception:
@@ -59,5 +60,5 @@ done
 
 # Append to the Google Sheet.
 echo
-echo "Sheet: $(curl -sS -L -X POST -H 'Content-Type: text/plain' --data-binary @"$OUT" "$SHEET_URL")"
+echo "Sheet: $(curl -sS -L -H 'Content-Type: text/plain' --data-binary @"$OUT" "$SHEET_URL")"
 echo "Saved copy: $OUT"

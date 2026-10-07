@@ -91,7 +91,8 @@ copy in `results/<trial id>.csv`. All MacBooks in a run share one Trial ID
   reached, speedtest isn't installed on it, or it took longer than 3 minutes.
   The rest of the run is fine.
 - "Host key verification failed" in Notes: the MacBook was reinstalled or
-  renamed. Run `ssh USERNAME@name.local` once by hand and answer `yes`.
+  renamed. Run `ssh-keygen -R name.local` to forget the old key, then
+  `ssh USERNAME@name.local` once by hand and answer `yes`.
 - `name.local` not found: the MacBook is on a different subnet. Put its IP in
   `hosts.txt` instead (System Settings > Wi-Fi > Details).
 - "Permission denied" in Notes: the SSH key wasn't copied to that MacBook, or
