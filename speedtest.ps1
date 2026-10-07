@@ -37,15 +37,18 @@ $rows = foreach ($m in $machines) {
   $row = [ordered]@{
     'Date / Time' = $now; 'Location' = $Location; 'Trial ID' = $trial; 'Concurrent Clients' = $count
     'Device Type' = 'Laptop'; 'Device ID' = $m; 'Download (Mbps)' = ''; 'Upload (Mbps)' = ''
-    'Ping' = ''; 'Jitter' = ''; 'Test Site' = 'https://www.speedtest.net/'; 'Result URL' = ''; 'Notes' = ''
+    'Idle Ping (ms)' = ''; 'Loaded Ping Down (ms)' = ''; 'Loaded Ping Up (ms)' = ''
+    'Test Site' = 'https://www.speedtest.net/'; 'Result URL' = ''; 'Notes' = ''
   }
   try {
     $d = Get-Content "results\.$m.json" -Raw | ConvertFrom-Json
     if (-not $d.download) { throw 'no result' }
     $row['Download (Mbps)'] = ($d.download.bandwidth * 8 / 1e6).ToString('F2', $inv)
     $row['Upload (Mbps)']   = ($d.upload.bandwidth * 8 / 1e6).ToString('F2', $inv)
-    $row['Ping']            = ([double]$d.ping.latency).ToString('F1', $inv)
-    if ($null -ne $d.ping.jitter) { $row['Jitter'] = ([double]$d.ping.jitter).ToString('F1', $inv) }
+    $ms = { param($v) if ($null -ne $v) { ([double]$v).ToString('F1', $inv) } else { '' } }
+    $row['Idle Ping (ms)']        = & $ms $d.ping.latency
+    $row['Loaded Ping Down (ms)'] = & $ms $d.download.latency.iqm    # latency while downloading
+    $row['Loaded Ping Up (ms)']   = & $ms $d.upload.latency.iqm      # latency while uploading
     $row['Result URL']      = $d.result.url
     Write-Host "[$m] OK  $($row['Download (Mbps)']) down / $($row['Upload (Mbps)']) up Mbps"
   } catch {

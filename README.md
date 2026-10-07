@@ -20,6 +20,14 @@ they do the same thing.
 
 The URL is long and random; anyone who has it could append rows, nothing more.
 
+The `Test Log` tab's header row must be these 14 columns, in this order:
+`Date / Time`, `Location`, `Trial ID`, `Concurrent Clients`, `Device Type`,
+`Device ID`, `Download (Mbps)`, `Upload (Mbps)`, `Idle Ping (ms)`,
+`Loaded Ping Down (ms)`, `Loaded Ping Up (ms)`, `Test Site`, `Result URL`, `Notes`.
+"Loaded" ping is the latency measured while the download/upload was running;
+that's the number that predicts how video calls feel on a busy network. Idle
+ping is the baseline to compare it against.
+
 If `sheet_script.gs` changes later, paste the new version in and then
 Deploy > Manage deployments > edit (pencil) > Version: **New version** > Deploy.
 The URL stays the same; without this step the sheet keeps running the old code.
