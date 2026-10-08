@@ -1,8 +1,8 @@
 # WiFi speed test
 
 One script. Runs speedtest on all the test MacBooks at once and appends the
-results to `results.csv`, a spreadsheet you can open in Excel or Numbers, import
-into Google Sheets, or commit to this repo. Run it from a Mac (`speedtest.sh`)
+results to `results.csv`, a spreadsheet you can open in Excel or Numbers and
+commit to this repo. Run it from a Mac (`speedtest.sh`)
 or a Windows laptop (`speedtest.ps1`); they do the same thing.
 
 ## Set up each test MacBook (once)
@@ -85,16 +85,9 @@ file is created on the first run). All MacBooks in a run share one Trial ID
 that's the number that predicts how video calls feel on a busy network. Idle
 ping is the baseline to compare it against.
 
-To get the rows into the
-[Google Sheet](https://docs.google.com/spreadsheets/d/1QH7NN4goNkNZAscmMheX1F84q-xraeevtTB_Dl4z620):
-open the `Test Log` tab, click cell **A2** (the header row), then
-File > Import > Upload > choose `results.csv` > Import location:
-**Replace data at selected cell**. The CSV's header line lands on row 2, the
-same as what's already there, and the data starts at row 3. Do this whenever
-you like (end of the day, end of the conference); because `results.csv` holds
-every run, re-importing replaces the rows rather than duplicating them, and
-the Summary tab picks up the new ones. Don't use **Append to current sheet**:
-it would add every earlier row again, plus the header as a data row.
+To look at the data, open `results.csv` in Excel or Numbers and filter or
+sort by `Location` or `Trial ID`. Commit the file after each test day so the
+results live in the repo alongside the scripts.
 
 ## If something fails
 
