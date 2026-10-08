@@ -2,7 +2,8 @@
 #
 # Windows version of speedtest.sh. Runs Ookla speedtest on every MacBook in
 # hosts.txt at the same time and appends the results to the Google Sheet.
-# Needs only what Windows 10/11 already has (OpenSSH client).
+# Laptops that are off or not on the network are skipped; Concurrent Clients
+# is the number that actually ran. Needs only what Windows 10/11 already has (OpenSSH client).
 param([string]$Location)
 while (-not $Location) { $Location = Read-Host "Room / location for this test" }
 
@@ -15,27 +16,31 @@ $SheetUrl = $cfg['SHEET_URL']
 if (-not $SshUser -or -not $SheetUrl -or $SshUser -eq 'CHANGE_ME' -or $SheetUrl -eq 'CHANGE_ME') { Write-Host "Fill in SSH_USER and SHEET_URL in config.txt."; exit 1 }
 
 $machines = @(Get-Content hosts.txt | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notmatch '^#' })
-$count = $machines.Count
-if ($count -eq 0) { Write-Host "hosts.txt has no laptops in it."; exit 1 }
+if ($machines.Count -eq 0) { Write-Host "hosts.txt has no laptops in it."; exit 1 }
 $inv = [cultureinfo]::InvariantCulture    # always write 123.45, never 123,45
 $now   = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 $trial = Get-Date -Format 'MMdd-HHmmss'    # e.g. 1006-092003 (short enough for chart labels)
 $tmp = (New-Item -ItemType Directory -Force (Join-Path $env:TEMP "speedtest-$trial")).FullName
-$out = "$tmp\rows.csv"
 
 # Start all MacBooks at once; give up on any that are still running after 3 minutes.
 $remote = 'PATH=/opt/homebrew/bin:/usr/local/bin:$PATH speedtest --accept-license --accept-gdpr -f json'
-$procs = foreach ($m in $machines) {
-  Start-Process ssh -ArgumentList "-o ConnectTimeout=8 -o BatchMode=yes $SshUser@$m `"$remote`"" `
+$procs = @{}
+foreach ($m in $machines) {
+  $procs[$m] = Start-Process ssh -ArgumentList "-o ConnectTimeout=8 -o BatchMode=yes $SshUser@$m `"$remote`"" `
     -NoNewWindow -PassThru -RedirectStandardOutput "$tmp\$m.json" -RedirectStandardError "$tmp\$m.err"
 }
-$procs | Wait-Process -Timeout 180 -ErrorAction SilentlyContinue
-$procs | Where-Object { -not $_.HasExited } | Stop-Process -Force
+$procs.Values | Wait-Process -Timeout 180 -ErrorAction SilentlyContinue
+$procs.Values | Where-Object { -not $_.HasExited } | Stop-Process -Force
 
-# One CSV row per MacBook.
+# One CSV row per MacBook that was reachable.
 $rows = foreach ($m in $machines) {
+  $err = ((Get-Content "$tmp\$m.err" -Raw -ErrorAction SilentlyContinue) -replace '\s+', ' ').Trim()
+  if ($procs[$m].ExitCode -eq 255) {          # ssh could not connect
+    Write-Host "[$m] skipped: $(if ($err) { $err } else { 'not reachable' })"
+    continue
+  }
   $row = [ordered]@{
-    'Date / Time' = $now; 'Location' = $Location; 'Trial ID' = $trial; 'Concurrent Clients' = $count
+    'Date / Time' = $now; 'Location' = $Location; 'Trial ID' = $trial; 'Concurrent Clients' = 0
     'Device ID' = $m; 'Download (Mbps)' = ''; 'Upload (Mbps)' = ''
     'Idle Ping (ms)' = ''; 'Loaded Ping Down (ms)' = ''; 'Loaded Ping Up (ms)' = ''; 'Result URL' = ''; 'Notes' = ''
   }
@@ -51,19 +56,20 @@ $rows = foreach ($m in $machines) {
     $row['Result URL']      = $d.result.url
     Write-Host "[$m] OK  $($row['Download (Mbps)']) down / $($row['Upload (Mbps)']) up Mbps"
   } catch {
-    $err = (Get-Content "$tmp\$m.err" -Raw -ErrorAction SilentlyContinue) -replace '\s+', ' '
-    if (-not $err -or -not $err.Trim()) { $err = 'speedtest returned no result (or timed out)' }
-    $row['Notes'] = $err.Trim()
+    $row['Notes'] = if ($err) { $err } else { 'speedtest returned no result (or timed out)' }
     Write-Host "[$m] FAILED: $($row['Notes'])"
   }
   [pscustomobject]$row
 }
-$rows | Export-Csv $out -NoTypeInformation -Encoding UTF8
+$rows = @($rows)
+$ok = @($rows | Where-Object { $_.'Download (Mbps)' }).Count
+$rows | ForEach-Object { $_.'Concurrent Clients' = $ok }
 
 # Append to the Google Sheet.
 Write-Host ""
 try {
-  $resp = Invoke-RestMethod -Uri $SheetUrl -Method Post -ContentType 'text/plain; charset=utf-8' -Body (Get-Content $out -Raw)
+  $body = ($rows | ConvertTo-Csv -NoTypeInformation) -join "`n"
+  $resp = Invoke-RestMethod -Uri $SheetUrl -Method Post -ContentType 'text/plain; charset=utf-8' -Body $body
   Write-Host "Sheet: $resp"
 } catch {
   Write-Host "Sheet: FAILED - $($_.Exception.Message)"

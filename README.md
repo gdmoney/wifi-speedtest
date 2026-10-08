@@ -93,11 +93,18 @@ It prints each MacBook's result and appends the rows to the sheet. All
 MacBooks in a run share one Trial ID (month, day and time, e.g. `1006-092003`);
 type it into the Summary tab to see the stats.
 
+You don't have to use every laptop in `hosts.txt`. Bring any 3, 5 or 10 of
+them; the ones that are off or not on the network are skipped (the script
+prints `skipped` for them), and `Concurrent Clients` is the number that
+actually ran.
+
 ## If something fails
 
-- A row with blank numbers and an error in Notes means that MacBook couldn't be
-  reached, speedtest isn't installed on it, or it took longer than 3 minutes.
-  The rest of the run is fine.
+- `[name] skipped: ...` on screen means the script couldn't log in to that
+  MacBook (off, not on the network, or SSH not set up). It gets no row in the
+  sheet; the rest of the run is fine.
+- A row with blank numbers and an error in Notes means the MacBook was reached
+  but speedtest isn't installed on it, failed, or took longer than 3 minutes.
 - "Host key verification failed" in Notes: the MacBook was reinstalled or
   renamed. Run `ssh-keygen -R name.local` to forget the old key, then
   `ssh USERNAME@name.local` once by hand and answer `yes`.
