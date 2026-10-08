@@ -1,3 +1,0 @@
-# Copy this file to config.txt and fill in both values. No spaces around the =, no quotes.
-SSH_USER=CHANGE_ME
-SHEET_URL=CHANGE_ME
