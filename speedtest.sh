@@ -70,5 +70,16 @@ with open("results.csv", "a", newline="", encoding="utf-8-sig") as f:
         w.writerow(["Date / Time", "Location", "Trial ID", "Concurrent Clients", "Device ID", "Download (Mbps)", "Upload (Mbps)",
                     "Idle Ping (ms)", "Loaded Ping Down (ms)", "Loaded Ping Up (ms)", "Result URL", "Notes"])
     w.writerows(rows)
-print(f"\nAdded {len(rows)} row(s) to results.csv (trial {trial}, {len(rows)} concurrent).")
+print(f"\nAdded {len(rows)} row(s) to results.csv.")
+
+# Summary of this run. Averages are over the laptops that returned a result.
+ok = [r for r in rows if r[5]]
+avg = lambda i: f"{sum(float(r[i]) for r in ok) / len(ok):.1f} Mbps" if ok else "n/a"
+print(f"\n  Trial ID:            {trial}")
+print(f"  Location:            {location}")
+print(f"  Concurrent Clients:  {len(rows)}")
+print(f"  Average Download:    {avg(5)}")
+print(f"  Average Upload:      {avg(6)}")
+if len(ok) < len(rows):
+    print(f"  ({len(rows) - len(ok)} laptop(s) returned no result and are left out of the averages)")
 PY

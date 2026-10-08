@@ -63,4 +63,21 @@ if ($rows.Count -eq 0) { Write-Host "No laptops responded; nothing written."; ex
 # Every reachable MacBook was loading the network, even one whose speedtest failed or timed out.
 $rows | ForEach-Object { $_.'Concurrent Clients' = $rows.Count }
 $rows | Export-Csv results.csv -Append -NoTypeInformation -Encoding UTF8
-Write-Host "Added $($rows.Count) row(s) to results.csv (trial $trial, $($rows.Count) concurrent)."
+Write-Host "Added $($rows.Count) row(s) to results.csv."
+
+# Summary of this run. Averages are over the MacBooks that returned a result.
+$ok = @($rows | Where-Object { $_.'Download (Mbps)' })
+function Avg($col) {
+  if ($ok.Count -eq 0) { return 'n/a' }
+  $sum = 0.0; foreach ($r in $ok) { $sum += [double]::Parse($r.$col, $inv) }
+  ($sum / $ok.Count).ToString('F1', $inv) + ' Mbps'
+}
+Write-Host ""
+Write-Host "  Trial ID:            $trial"
+Write-Host "  Location:            $Location"
+Write-Host "  Concurrent Clients:  $($rows.Count)"
+Write-Host "  Average Download:    $(Avg 'Download (Mbps)')"
+Write-Host "  Average Upload:      $(Avg 'Upload (Mbps)')"
+if ($ok.Count -lt $rows.Count) {
+  Write-Host "  ($($rows.Count - $ok.Count) laptop(s) returned no result and are left out of the averages)"
+}
