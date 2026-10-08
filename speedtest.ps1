@@ -3,7 +3,7 @@
 # Windows version of speedtest.sh. Runs Ookla speedtest on every MacBook in
 # hosts.txt at the same time and appends one row per MacBook to results.csv.
 # Laptops that are off or not on the network are skipped; Concurrent Clients
-# is the number that actually ran. Needs only what Windows 10/11 already has (OpenSSH client).
+# is the number that were reached. Needs only what Windows 10/11 already has (OpenSSH client).
 param([string]$Location)
 while (-not $Location) { $Location = Read-Host "Room / location for this test" }
 
@@ -21,6 +21,7 @@ $procs = @{}
 foreach ($m in $machines) {
   $procs[$m] = Start-Process ssh -ArgumentList "-o ConnectTimeout=8 -o BatchMode=yes $m `"$remote`"" `
     -NoNewWindow -PassThru -RedirectStandardOutput "$tmp\$m.json" -RedirectStandardError "$tmp\$m.err"
+  $null = $procs[$m].Handle    # without this, Windows PowerShell 5.1 reports ExitCode as null
 }
 $procs.Values | Wait-Process -Timeout 180 -ErrorAction SilentlyContinue
 $procs.Values | Where-Object { -not $_.HasExited } | Stop-Process -Force
@@ -59,7 +60,7 @@ Remove-Item $tmp -Recurse -Force
 $rows = @($rows)
 Write-Host ""
 if ($rows.Count -eq 0) { Write-Host "No laptops responded; nothing written."; exit 1 }
-$ok = @($rows | Where-Object { $_.'Download (Mbps)' }).Count
-$rows | ForEach-Object { $_.'Concurrent Clients' = $ok }
+# Every reachable MacBook was loading the network, even one whose speedtest failed or timed out.
+$rows | ForEach-Object { $_.'Concurrent Clients' = $rows.Count }
 $rows | Export-Csv results.csv -Append -NoTypeInformation -Encoding UTF8
-Write-Host "Added $($rows.Count) row(s) to results.csv (trial $trial, $ok concurrent)."
+Write-Host "Added $($rows.Count) row(s) to results.csv (trial $trial, $($rows.Count) concurrent)."

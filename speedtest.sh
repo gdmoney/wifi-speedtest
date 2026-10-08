@@ -3,7 +3,7 @@
 #
 # Runs Ookla speedtest on every laptop in hosts.txt at the same time and
 # appends one row per laptop to results.csv. Laptops that are off or not on
-# the network are skipped; Concurrent Clients is the number that actually ran.
+# the network are skipped; Concurrent Clients is the number that were reached.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -61,8 +61,8 @@ for h in hosts:
 if not rows:
     print("\nNo laptops responded; nothing written.")
     sys.exit()
-ok = sum(1 for r in rows if r[5])
-for r in rows: r[3] = ok
+# Every reachable laptop was loading the network, even one whose speedtest failed or timed out.
+for r in rows: r[3] = len(rows)
 new = not os.path.exists("results.csv")
 with open("results.csv", "a", newline="", encoding="utf-8-sig") as f:
     w = csv.writer(f)
@@ -70,5 +70,5 @@ with open("results.csv", "a", newline="", encoding="utf-8-sig") as f:
         w.writerow(["Date / Time", "Location", "Trial ID", "Concurrent Clients", "Device ID", "Download (Mbps)", "Upload (Mbps)",
                     "Idle Ping (ms)", "Loaded Ping Down (ms)", "Loaded Ping Up (ms)", "Result URL", "Notes"])
     w.writerows(rows)
-print(f"\nAdded {len(rows)} row(s) to results.csv (trial {trial}, {ok} concurrent).")
+print(f"\nAdded {len(rows)} row(s) to results.csv (trial {trial}, {len(rows)} concurrent).")
 PY

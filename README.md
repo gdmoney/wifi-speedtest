@@ -63,8 +63,13 @@ room name on the command line instead: `speedtest.sh "Ballroom A"`.
 
 You don't have to use every laptop in `hosts.txt`. Bring any 3, 5 or 10 of
 them; the ones that are off or not on the network are skipped (the script
-prints `skipped` for them), and `Concurrent Clients` is the number that
-actually ran.
+prints `skipped` for them), and `Concurrent Clients` is the number the script
+reached. A reached laptop counts even if its speedtest failed or timed out,
+because it was still loading the network during the test.
+
+Laptops you aren't using must be powered off (or at least off the conference
+WiFi). One left on in a bag and still connected will run the test and count
+as a client.
 
 ## Results
 
@@ -82,9 +87,14 @@ ping is the baseline to compare it against.
 
 To get the rows into the
 [Google Sheet](https://docs.google.com/spreadsheets/d/1QH7NN4goNkNZAscmMheX1F84q-xraeevtTB_Dl4z620):
-open the `Test Log` tab, File > Import > Upload > choose `results.csv` >
-Import location: **Append to current sheet**. Do this whenever you like (end
-of the day, end of the conference); the Summary tab picks up the new rows.
+open the `Test Log` tab, click cell **A2** (the header row), then
+File > Import > Upload > choose `results.csv` > Import location:
+**Replace data at selected cell**. The CSV's header line lands on row 2, the
+same as what's already there, and the data starts at row 3. Do this whenever
+you like (end of the day, end of the conference); because `results.csv` holds
+every run, re-importing replaces the rows rather than duplicating them, and
+the Summary tab picks up the new ones. Don't use **Append to current sheet**:
+it would add every earlier row again, plus the header as a data row.
 
 ## If something fails
 
