@@ -1,8 +1,8 @@
 # WiFi speed test
 
 One script. Runs speedtest on all the test MacBooks at once and appends the
-results to `results.csv`, a spreadsheet you can open in Excel or Numbers and
-commit to this repo. Run it from a Mac (`speedtest.sh`)
+results to `results.csv`, which is committed to this repo and charted on the
+[stats page](https://gdmoney.github.io/wifi-speedtest/). Run it from a Mac (`speedtest.sh`)
 or a Windows laptop (`speedtest.ps1`); they do the same thing.
 
 ## Set up each test MacBook (once)
@@ -85,9 +85,29 @@ file is created on the first run). All MacBooks in a run share one Trial ID
 that's the number that predicts how video calls feel on a busy network. Idle
 ping is the baseline to compare it against.
 
-To look at the data, open `results.csv` in Excel or Numbers and filter or
-sort by `Location` or `Trial ID`. Commit the file after each test day so the
-results live in the repo alongside the scripts.
+After each round, commit `results.csv` and push (GitHub Desktop: write a
+summary, Commit to main, Push origin). Before starting a round, Fetch origin
+and Pull so you have the other testers' rows; one round at a time and this
+never conflicts.
+
+For a quick look, open `results.csv` in Excel or Numbers and filter or sort
+by `Location` or `Trial ID`.
+
+## Stats page
+
+`index.html` is a one-page dashboard built from `results.csv`: headline
+cards, download/upload by room, a total-vs-per-client capacity chart, and a
+sortable table with one row per trial. It is published with GitHub Pages at
+
+https://gdmoney.github.io/wifi-speedtest/
+
+and refreshes itself a minute or two after every push; there is nothing to
+build or run. It has to be opened from that address, not double-clicked from
+the folder, because browsers won't let a local page read a local CSV.
+
+To turn Pages on (once): repo on github.com > Settings > Pages > Build and
+deployment > Source: **Deploy from a branch** > Branch: **main**, folder
+**/ (root)** > Save.
 
 ## If something fails
 

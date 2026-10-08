@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WiFi Speed Test Stats</title>
+<style>
+  :root {
+    --bg: #ffffff; --card: #f4f3ef; --text: #1f1f1d; --muted: #6b6a65; --line: #d9d7cf;
+    --accent: #2f2a7a; --accent2: #1d9e75; --warn: #b4261f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1b1b1a; --card: #262624; --text: #ecebe6; --muted: #a09f98; --line: #3a3936;
+            --accent: #a9a3ee; --accent2: #5dcaa5; --warn: #f09595; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 26px; font-weight: 600; margin: 0 0 4px; }
+  h2 { font-size: 18px; font-weight: 600; margin: 40px 0 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 20px; }
+  .card { background: var(--card); border-radius: 10px; padding: 14px 16px; }
+  .card .label { font-size: 13px; color: var(--muted); }
+  .card .value { font-size: 26px; font-weight: 600; margin-top: 2px; line-height: 1.2; }
+  .card .note { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .chart { position: relative; height: 320px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-weight: 600; color: var(--muted); cursor: pointer; user-select: none; }
+  th:hover { color: var(--text); }
+  th.sorted::after { content: " \2193"; }
+  th.sorted.asc::after { content: " \2191"; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .wrap { overflow-x: auto; }
+  .empty { background: var(--card); border-radius: 10px; padding: 24px; color: var(--muted); }
+  footer { margin-top: 48px; font-size: 13px; color: var(--muted); }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1>WiFi speed test</h1>
+  <p class="sub" id="subtitle">Loading results.csv…</p>
+
+  <div id="content" hidden>
+    <div class="cards" id="cards"></div>
+
+    <h2>Download and upload by room</h2>
+    <p class="sub">Average across every laptop run in that room, all trials combined.</p>
+    <div class="chart"><canvas id="roomsChart"></canvas></div>
+
+    <h2>Capacity: total vs. per-client throughput</h2>
+    <p class="sub">Each point is the average of all trials run with that many laptops. A flat total line means the network has hit its ceiling; past that, adding clients only divides the same pie.</p>
+    <div class="chart"><canvas id="capacityChart"></canvas></div>
+
+    <h2>Every trial</h2>
+    <p class="sub">One row per round. Click a column heading to sort. Averages leave out laptops that returned no result.</p>
+    <div class="wrap">
+      <table id="trials">
+        <thead><tr>
+          <th data-k="trial">Trial ID</th>
+          <th data-k="when">Date</th>
+          <th data-k="room">Room</th>
+          <th data-k="clients" class="num">Clients</th>
+          <th data-k="down" class="num">Avg down (Mbps)</th>
+          <th data-k="up" class="num">Avg up (Mbps)</th>
+          <th data-k="total" class="num">Total down (Mbps)</th>
+          <th data-k="ping" class="num">Worst loaded ping (ms)</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="empty" class="empty" hidden></div>
+
+  <footer>Built from <a href="results.csv">results.csv</a> in this repository. The page updates itself a minute or two after a new push.</footer>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(async function () {
+  const $ = (s) => document.querySelector(s);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const fmt = (n, d = 0) => n == null || isNaN(n) ? "–" : n.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+  const mean = (a) => a.length ? a.reduce((s, x) => s + x, 0) / a.length : null;
+  const num = (s) => { const v = parseFloat(s); return isNaN(v) ? null : v; };
+
+  function parseCsv(text) {
+    text = text.replace(/^﻿/, "");
+    const rows = []; let row = [], field = "", q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) {
+        if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else q = false; }
+        else field += c;
+      } else if (c === '"') q = true;
+      else if (c === ",") { row.push(field); field = ""; }
+      else if (c === "\n" || c === "\r") {
+        if (c === "\r" && text[i + 1] === "\n") i++;
+        row.push(field); field = ""; rows.push(row); row = [];
+      } else field += c;
+    }
+    if (field !== "" || row.length) { row.push(field); rows.push(row); }
+    const header = rows.shift() || [];
+    return rows.filter(r => r.length === header.length && r.some(v => v !== ""))
+               .map(r => Object.fromEntries(header.map((h, i) => [h.trim(), r[i]])));
+  }
+
+  function showEmpty(msg) {
+    $("#subtitle").textContent = "";
+    $("#empty").hidden = false;
+    $("#empty").textContent = msg;
+  }
+
+  let rows;
+  try {
+    const res = await fetch("results.csv?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error(res.status);
+    rows = parseCsv(await res.text());
+  } catch (e) {
+    showEmpty(location.protocol === "file:"
+      ? "This page reads results.csv over the web, so it has to be opened from GitHub Pages rather than double-clicked from the folder."
+      : "No results.csv yet. Run a test, commit and push, and this page fills in on its own.");
+    return;
+  }
+  if (!rows.length) { showEmpty("results.csv has no rows yet. Run a test, commit and push."); return; }
+
+  // One record per laptop run.
+  const runs = rows.map(r => ({
+    when: r["Date / Time"], room: r["Location"], trial: r["Trial ID"],
+    clients: num(r["Concurrent Clients"]), device: r["Device ID"],
+    down: num(r["Download (Mbps)"]), up: num(r["Upload (Mbps)"]),
+    pingDown: num(r["Loaded Ping Down (ms)"]), pingUp: num(r["Loaded Ping Up (ms)"]),
+  }));
+  const ok = runs.filter(r => r.down != null);
+
+  // One record per trial.
+  const trialMap = new Map();
+  for (const r of runs) {
+    if (!trialMap.has(r.trial)) trialMap.set(r.trial, { trial: r.trial, when: r.when, room: r.room, clients: r.clients, runs: [] });
+    trialMap.get(r.trial).runs.push(r);
+  }
+  const trials = [...trialMap.values()].map(t => {
+    const good = t.runs.filter(r => r.down != null);
+    const pings = t.runs.flatMap(r => [r.pingDown, r.pingUp]).filter(v => v != null);
+    return { ...t, down: mean(good.map(r => r.down)), up: mean(good.map(r => r.up)),
+             total: good.length ? good.reduce((s, r) => s + r.down, 0) : null,
+             ping: pings.length ? Math.max(...pings) : null };
+  }).sort((a, b) => a.when.localeCompare(b.when));
+
+  // Per room.
+  const roomMap = new Map();
+  for (const r of ok) { if (!roomMap.has(r.room)) roomMap.set(r.room, []); roomMap.get(r.room).push(r); }
+  const rooms = [...roomMap.entries()].map(([room, rs]) => ({ room, down: mean(rs.map(r => r.down)), up: mean(rs.map(r => r.up)), n: rs.length }))
+                .sort((a, b) => b.down - a.down);
+
+  $("#subtitle").textContent = `${trials.length} trial${trials.length === 1 ? "" : "s"} across ${rooms.length} room${rooms.length === 1 ? "" : "s"}, ` +
+    `${runs.length} laptop runs. Last test ${trials[trials.length - 1].when}.`;
+
+  // Headline cards.
+  const peak = trials.filter(t => t.total != null).sort((a, b) => b.total - a.total)[0];
+  const best = rooms[0], worst = rooms[rooms.length - 1];
+  const card = (label, value, note) => `<div class="card"><div class="label">${label}</div><div class="value">${value}</div><div class="note">${note}</div></div>`;
+  $("#cards").innerHTML =
+    card("Rooms tested", rooms.length, `${trials.length} trials, ${runs.length} laptop runs`) +
+    card("Best room", best ? best.room : "–", best ? `${fmt(best.down)} Mbps avg down` : "") +
+    card("Worst room", worst ? worst.room : "–", worst ? `${fmt(worst.down)} Mbps avg down` : "") +
+    card("Peak total throughput", peak ? `${fmt(peak.total)} Mbps` : "–", peak ? `${peak.room}, ${peak.clients} clients` : "");
+
+  // Charts.
+  Chart.defaults.color = css("--muted");
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  Chart.defaults.font.size = 13;
+  const grid = css("--line"), accent = css("--accent"), accent2 = css("--accent2");
+
+  new Chart($("#roomsChart"), {
+    type: "bar",
+    data: { labels: rooms.map(r => r.room), datasets: [
+      { label: "Download (Mbps)", data: rooms.map(r => +r.down.toFixed(1)), backgroundColor: accent },
+      { label: "Upload (Mbps)", data: rooms.map(r => +r.up.toFixed(1)), backgroundColor: accent2 },
+    ]},
+    options: { maintainAspectRatio: false, plugins: { legend: { position: "bottom" } },
+      scales: { y: { beginAtZero: true, grid: { color: grid }, title: { display: true, text: "Mbps" } }, x: { grid: { display: false } } } }
+  });
+
+  const byClients = new Map();
+  for (const t of trials.filter(t => t.down != null && t.clients != null)) {
+    if (!byClients.has(t.clients)) byClients.set(t.clients, []);
+    byClients.get(t.clients).push(t);
+  }
+  const cap = [...byClients.entries()].sort((a, b) => a[0] - b[0])
+    .map(([clients, ts]) => ({ clients, perClient: mean(ts.map(t => t.down)), total: mean(ts.map(t => t.total)), n: ts.length }));
+
+  new Chart($("#capacityChart"), {
+    type: "line",
+    data: { datasets: [
+      { label: "Total throughput (all laptops combined)", data: cap.map(c => ({ x: c.clients, y: +c.total.toFixed(1) })),
+        borderColor: accent, backgroundColor: accent, borderWidth: 3, pointRadius: 5, tension: 0.3 },
+      { label: "Per-client throughput (average laptop)", data: cap.map(c => ({ x: c.clients, y: +c.perClient.toFixed(1) })),
+        borderColor: accent2, backgroundColor: accent2, borderWidth: 2, borderDash: [6, 4], pointRadius: 5, tension: 0.3 },
+    ]},
+    options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { legend: { position: "bottom" },
+        tooltip: { callbacks: { title: (items) => { const c = cap.find(c => c.clients === items[0].parsed.x); return `${c.clients} clients (${c.n} trial${c.n === 1 ? "" : "s"})`; },
+                                label: (i) => ` ${i.dataset.label}: ${fmt(i.parsed.y, 1)} Mbps` } } },
+      scales: { x: { type: "linear", min: 0, ticks: { stepSize: 1, precision: 0 }, grid: { display: false }, title: { display: true, text: "Concurrent clients" } },
+                y: { beginAtZero: true, grid: { color: grid }, title: { display: true, text: "Mbps" } } } }
+  });
+
+  // Table.
+  const tbody = $("#trials tbody");
+  const shortDate = (s) => { const d = new Date(s.replace(" ", "T")); return isNaN(d) ? s : d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }); };
+  let sortKey = "when", asc = false;
+  function render() {
+    const sorted = [...trials].sort((a, b) => {
+      const x = a[sortKey], y = b[sortKey];
+      const c = (x == null) - (y == null) || (typeof x === "number" ? x - y : String(x).localeCompare(String(y)));
+      return asc ? c : -c;
+    });
+    tbody.innerHTML = sorted.map(t => `<tr>
+      <td>${t.trial}</td><td>${shortDate(t.when)}</td><td>${t.room}</td>
+      <td class="num">${fmt(t.clients)}</td><td class="num">${fmt(t.down, 1)}</td><td class="num">${fmt(t.up, 1)}</td>
+      <td class="num">${fmt(t.total)}</td><td class="num">${fmt(t.ping)}</td></tr>`).join("");
+    document.querySelectorAll("#trials th").forEach(th => {
+      th.classList.toggle("sorted", th.dataset.k === sortKey);
+      th.classList.toggle("asc", th.dataset.k === sortKey && asc);
+    });
+  }
+  document.querySelectorAll("#trials th").forEach(th => th.addEventListener("click", () => {
+    if (sortKey === th.dataset.k) asc = !asc; else { sortKey = th.dataset.k; asc = th.classList.contains("num") ? false : true; }
+    render();
+  }));
+  render();
+  $("#content").hidden = false;
+})();
+</script>
+</body>
+</html>
