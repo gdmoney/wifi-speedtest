@@ -1,14 +1,28 @@
 # WiFi speed test
 
-One script. Runs speedtest on all the test MacBooks at once and appends the
-results to `results.csv`, which is committed to this repo and charted on the
-[stats page](https://gdmoney.github.io/wifi-speedtest/). Run it from a Mac (`speedtest.sh`)
-or a Windows laptop (`speedtest.ps1`); they do the same thing.
+## Project overview
+
+We need to know whether a venue's WiFi can handle a room full of people on
+video calls before we commit to it. Guessing from one laptop's speed test
+doesn't answer that, so this project measures the network under realistic
+load: up to ten MacBooks run Ookla Speedtest at the same moment, from the
+same room, and we look at how the total and per-laptop throughput hold up as
+the number of clients grows.
+
+How it works: a control laptop (Mac or Windows) connects to each test MacBook
+over SSH, starts speedtest on all of them simultaneously, collects the JSON
+results, and appends one row per MacBook to `results.csv`. The tester commits
+and pushes that file after each round. GitHub Pages serves `index.html`,
+which reads the CSV and renders the charts, so the
+[stats page](https://gdmoney.github.io/wifi-speedtest/) is always current
+without any build step.
 
 ## Set up each test MacBook (once)
 
 1. System Settings > General > Sharing > turn on **Remote Login**.
-2. In Terminal: `brew tap teamookla/speedtest && brew install speedtest`
+2. Install Homebrew if the MacBook doesn't have it yet (one command, from
+   https://brew.sh), then in Terminal:
+   `brew tap teamookla/speedtest && brew install speedtest`
 3. Note the laptop's name from the Sharing screen (e.g. `wifi-test-01`) and the
    account name you log in with.
 
@@ -23,8 +37,10 @@ or a Windows laptop (`speedtest.ps1`); they do the same thing.
 
    `<username>` is your login name on that laptop. The rest of this README
    uses these paths; adjust them if you cloned somewhere else.
-2. Edit `hosts.txt`: one test MacBook per line as `login@name.local` (or
-   `login@<ip address>`), where `login` is the account name on that MacBook.
+2. Check that `hosts.txt` lists every test MacBook, one per line as
+   `login@name.local` (or `login@<ip address>`), where `login` is the account
+   name on that MacBook. The file is shared through the repo, so if one is
+   missing, add it and commit; don't keep local edits to it.
 
 On a Mac control laptop, the script needs `python3`. If running it pops up an
 "install the command line developer tools?" dialog, click Install once.
@@ -60,6 +76,11 @@ C:\Users\<username>\Documents\GitHub\wifi-speedtest\speedtest.ps1
 ```
 It asks for the room / location, then runs. To skip the question, pass the
 room name on the command line instead: `speedtest.sh "Ballroom A"`.
+
+As each MacBook finishes, its download and upload are printed. When the run
+is complete the script prints a summary: Trial ID, Location, Concurrent
+Clients, Average Download and Average Upload. That's the number to check
+before moving to the next room.
 
 You don't have to use every laptop in `hosts.txt`. Bring any 3, 5 or 10 of
 them; the ones that are off or not on the network are skipped (the script
@@ -116,10 +137,11 @@ deployment > Source: **Deploy from a branch** > Branch: **main**, folder
   `results.csv`; the rest of the run is fine.
 - A row with blank numbers and an error in Notes means the MacBook was reached
   but speedtest isn't installed on it, failed, or took longer than 3 minutes.
-- "Host key verification failed": the MacBook was reinstalled or renamed. Run
-  `ssh-keygen -R name.local` to forget the old key, then `ssh login@name.local`
-  once by hand and answer `yes`.
-- `name.local` not found: the MacBook is on a different subnet. Put its IP in
-  `hosts.txt` instead (System Settings > Wi-Fi > Details).
-- "Permission denied": the SSH key wasn't copied to that MacBook, or the login
-  name in `hosts.txt` is wrong. Redo the key step for that machine.
+- `skipped: Host key verification failed`: the MacBook was reinstalled or
+  renamed. Run `ssh-keygen -R name.local` to forget the old key, then
+  `ssh login@name.local` once by hand and answer `yes`.
+- `skipped: ... name.local: nodename nor servname provided` (or similar "not
+  found"): the MacBook is on a different subnet. Put its IP in `hosts.txt`
+  instead (System Settings > Wi-Fi > Details).
+- `skipped: Permission denied`: the SSH key wasn't copied to that MacBook, or
+  the login name in `hosts.txt` is wrong. Redo the key step for that machine.
