@@ -55,6 +55,10 @@ for h in hosts:
         row[10] = d.get('result', {}).get('url', '')
         print(f"[{h}] OK  {row[5]} down / {row[6]} up Mbps")
     except Exception:
+        if not err:   # Ookla reports its own errors as JSON log lines on stdout
+            for line in open(f"{tmp}/{h}.json", errors="replace"):
+                try: err = json.loads(line).get("message") or err
+                except ValueError: pass
         row[11] = err or "speedtest returned no result (or timed out)"
         print(f"[{h}] FAILED: {row[11]}")
     rows.append(row)

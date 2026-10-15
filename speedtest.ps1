@@ -28,7 +28,7 @@ $procs.Values | Where-Object { -not $_.HasExited } | Stop-Process -Force
 
 # One row per MacBook that was reachable.
 $rows = foreach ($m in $machines) {
-  $err = ((Get-Content "$tmp\$m.err" -Raw -ErrorAction SilentlyContinue) -replace '\s+', ' ').Trim()
+  $err = ([string](Get-Content "$tmp\$m.err" -Raw -ErrorAction SilentlyContinue) -replace '\s+', ' ').Trim()
   if ($procs[$m].ExitCode -eq 255) {          # ssh could not connect
     Write-Host "[$m] skipped: $(if ($err) { $err } else { 'not reachable' })"
     continue
@@ -50,6 +50,11 @@ $rows = foreach ($m in $machines) {
     $row['Result URL']      = $d.result.url
     Write-Host "[$m] OK  $($row['Download (Mbps)']) down / $($row['Upload (Mbps)']) up Mbps"
   } catch {
+    if (-not $err) {   # Ookla reports its own errors as JSON log lines on stdout
+      foreach ($line in @(Get-Content "$tmp\$m.json" -ErrorAction SilentlyContinue)) {
+        try { $msg = ($line | ConvertFrom-Json).message; if ($msg) { $err = $msg } } catch {}
+      }
+    }
     $row['Notes'] = if ($err) { $err } else { 'speedtest returned no result (or timed out)' }
     Write-Host "[$m] FAILED: $($row['Notes'])"
   }
