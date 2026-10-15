@@ -20,7 +20,7 @@ trap 'rm -rf "$TMP"' EXIT
 PIDS=(); NAMES=()
 for h in $HOSTS; do
   ssh -o ConnectTimeout=8 -o BatchMode=yes "$h" \
-    'PATH=/opt/homebrew/bin:/usr/local/bin:$PATH speedtest --accept-license --accept-gdpr -f json' \
+    'PATH=/opt/homebrew/bin:/usr/local/bin:$PATH speedtest -f json' \
     > "$TMP/$h.json" 2> "$TMP/$h.err" &
   PIDS+=($!); NAMES+=("$h")
   sleep 3    # three seconds apart: still overlapping, but not all hitting the server in the same instant

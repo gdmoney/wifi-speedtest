@@ -16,7 +16,7 @@ $trial = Get-Date -Format 'MMdd-HHmmss'    # e.g. 1006-092003 (short enough for 
 $tmp = (New-Item -ItemType Directory -Force (Join-Path $env:TEMP "speedtest-$trial")).FullName
 
 # Start all MacBooks at once; give up on any that are still running after 3 minutes.
-$remote = 'PATH=/opt/homebrew/bin:/usr/local/bin:$PATH speedtest --accept-license --accept-gdpr -f json'
+$remote = 'PATH=/opt/homebrew/bin:/usr/local/bin:$PATH speedtest -f json'
 $procs = @{}
 foreach ($m in $machines) {
   $procs[$m] = Start-Process ssh -ArgumentList "-o ConnectTimeout=8 -o BatchMode=yes $m `"$remote`"" `
