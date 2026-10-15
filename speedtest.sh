@@ -65,7 +65,7 @@ if not rows:
 for r in rows: r[3] = len(rows)
 new = not os.path.exists("results.csv")
 with open("results.csv", "a", newline="", encoding="utf-8-sig") as f:
-    w = csv.writer(f)
+    w = csv.writer(f, lineterminator="\n")
     if new:
         w.writerow(["Date / Time", "Location", "Trial ID", "Concurrent Clients", "Device ID", "Download (Mbps)", "Upload (Mbps)",
                     "Idle Ping (ms)", "Loaded Ping Down (ms)", "Loaded Ping Up (ms)", "Result URL", "Notes"])
