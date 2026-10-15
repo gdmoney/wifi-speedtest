@@ -43,11 +43,12 @@ without any build step.
    `https://github.com/gdmoney/wifi-speedtest.git` and keep the default Local
    path. It lands at:
 
-   - Mac: `/Users/<username>/Documents/GitHub/wifi-speedtest`
-   - Windows: `C:\Users\<username>\Documents\GitHub\wifi-speedtest`
+   - Mac: `~/Documents/GitHub/wifi-speedtest`
+   - Windows: `$env:USERPROFILE\Documents\GitHub\wifi-speedtest`
 
-   `<username>` is your login name on that laptop. The rest of this README
-   uses these paths; adjust them if you cloned somewhere else.
+   The commands below use these paths exactly as written (`~` and
+   `$env:USERPROFILE` expand to your home folder), so they can be pasted as
+   is. Adjust them if you cloned somewhere else.
 2. Check that `hosts.txt` lists every test MacBook, one per line as
    `login@name.local` (or `login@<ip address>`), where `login` is the account
    name on that MacBook. The file is shared through the repo, so if one is
@@ -61,14 +62,14 @@ password. You'll type each MacBook's password once; after that, no prompts.
 
 **Mac** (Terminal):
 ```
-chmod +x /Users/<username>/Documents/GitHub/wifi-speedtest/speedtest.sh
-for h in $(grep -v '^#' /Users/<username>/Documents/GitHub/wifi-speedtest/hosts.txt); do ssh-copy-id $h; done
+chmod +x ~/Documents/GitHub/wifi-speedtest/speedtest.sh
+for h in $(grep -v '^#' ~/Documents/GitHub/wifi-speedtest/hosts.txt); do ssh-copy-id $h; done
 ```
 
 **Windows** (PowerShell):
 ```
 ssh-keygen -t ed25519            # press Enter at every prompt; skip if you already have a key
-foreach ($h in (Get-Content C:\Users\<username>\Documents\GitHub\wifi-speedtest\hosts.txt | ? { $_ -notmatch '^#' -and $_.Trim() })) {
+foreach ($h in (Get-Content $env:USERPROFILE\Documents\GitHub\wifi-speedtest\hosts.txt | ? { $_ -notmatch '^#' -and $_.Trim() })) {
   type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh $h "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
 }
 ```
@@ -79,11 +80,11 @@ this once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 
 Mac:
 ```
-/Users/<username>/Documents/GitHub/wifi-speedtest/speedtest.sh
+~/Documents/GitHub/wifi-speedtest/speedtest.sh
 ```
 Windows:
 ```
-C:\Users\<username>\Documents\GitHub\wifi-speedtest\speedtest.ps1
+$env:USERPROFILE\Documents\GitHub\wifi-speedtest\speedtest.ps1
 ```
 It asks for the room / location, then runs. To skip the question, pass the
 room name on the command line instead: `speedtest.sh "Ballroom A"`.
