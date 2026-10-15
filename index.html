@@ -8,10 +8,12 @@
   :root {
     --bg: #ffffff; --card: #f4f3ef; --text: #1f1f1d; --muted: #6b6a65; --line: #d9d7cf;
     --accent: #2f2a7a; --accent2: #1d9e75; --warn: #b4261f;
+    --tile-slate: #e6ebf2; --tile-sage: #e3ece3; --tile-rose: #f1e3e0; --tile-sand: #f3ead9;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #1b1b1a; --card: #262624; --text: #ecebe6; --muted: #a09f98; --line: #3a3936;
-            --accent: #a9a3ee; --accent2: #5dcaa5; --warn: #f09595; }
+            --accent: #a9a3ee; --accent2: #5dcaa5; --warn: #f09595;
+            --tile-slate: #2a3038; --tile-sage: #273129; --tile-rose: #372a28; --tile-sand: #38322a; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
@@ -25,6 +27,8 @@
   .card .label { font-size: 13px; color: var(--muted); }
   .card .value { font-size: 26px; font-weight: 600; margin-top: 2px; line-height: 1.2; }
   .card .note { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .card.slate { background: var(--tile-slate); } .card.sage { background: var(--tile-sage); }
+  .card.rose { background: var(--tile-rose); } .card.sand { background: var(--tile-sand); }
   .chart { position: relative; height: 320px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
@@ -41,7 +45,7 @@
 </head>
 <body>
 <main>
-  <h1>WiFi speed test</h1>
+  <h1>WiFi Speed Test Stats</h1>
   <p class="sub" id="subtitle">Loading results.csv…</p>
 
   <div id="content" hidden>
@@ -162,12 +166,12 @@
   // Headline cards.
   const peak = trials.filter(t => t.total != null).sort((a, b) => b.total - a.total)[0];
   const best = rooms[0], worst = rooms[rooms.length - 1];
-  const card = (label, value, note) => `<div class="card"><div class="label">${label}</div><div class="value">${value}</div><div class="note">${note}</div></div>`;
+  const card = (label, value, note, tone) => `<div class="card ${tone}"><div class="label">${label}</div><div class="value">${value}</div><div class="note">${note}</div></div>`;
   $("#cards").innerHTML =
-    card("Rooms tested", rooms.length, `${trials.length} trials, ${runs.length} laptop runs`) +
-    card("Best room", best ? best.room : "–", best ? `${fmt(best.down)} Mbps avg down` : "") +
-    card("Worst room", worst ? worst.room : "–", worst ? `${fmt(worst.down)} Mbps avg down` : "") +
-    card("Peak total throughput", peak ? `${fmt(peak.total)} Mbps` : "–", peak ? `${peak.room}, ${peak.clients} clients` : "");
+    card("Rooms tested", rooms.length, `${trials.length} trials, ${runs.length} laptop runs`, "slate") +
+    card("Best room", best ? best.room : "–", best ? `${fmt(best.down)} Mbps avg down` : "", "sage") +
+    card("Worst room", worst ? worst.room : "–", worst ? `${fmt(worst.down)} Mbps avg down` : "", "rose") +
+    card("Peak total throughput", peak ? `${fmt(peak.total)} Mbps` : "–", peak ? `${peak.room}, ${peak.clients} clients` : "", "sand");
 
   // Charts.
   Chart.defaults.color = css("--muted");
