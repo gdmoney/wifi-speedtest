@@ -84,10 +84,12 @@ Mac:
 ```
 Windows:
 ```
-$env:USERPROFILE\Documents\GitHub\wifi-speedtest\speedtest.ps1
+& $env:USERPROFILE\Documents\GitHub\wifi-speedtest\speedtest.ps1
 ```
-It asks for the room / location, then runs. To skip the question, pass the
-room name on the command line instead: `speedtest.sh "Ballroom A"`.
+(The leading `&` is required in PowerShell when a command starts with a
+variable.) It asks for the room / location, then runs. To skip the question,
+pass the room name on the command line instead: `speedtest.sh "Ballroom A"`
+or `& $env:USERPROFILE\Documents\GitHub\wifi-speedtest\speedtest.ps1 "Ballroom A"`.
 
 As each MacBook finishes, its download and upload are printed. When the run
 is complete the script prints a summary: Trial ID, Location, Concurrent
