@@ -22,9 +22,11 @@ foreach ($m in $machines) {
   $procs[$m] = Start-Process ssh -ArgumentList "-o ConnectTimeout=8 -o BatchMode=yes $m `"$remote`"" `
     -NoNewWindow -PassThru -RedirectStandardOutput "$tmp\$m.json" -RedirectStandardError "$tmp\$m.err"
   $null = $procs[$m].Handle    # without this, Windows PowerShell 5.1 reports ExitCode as null
+  Start-Sleep -Seconds 3       # three seconds apart: still overlapping, but not all hitting the server in the same instant
 }
 $procs.Values | Wait-Process -Timeout 180 -ErrorAction SilentlyContinue
-$procs.Values | Where-Object { -not $_.HasExited } | Stop-Process -Force
+$timedOut = @{}
+foreach ($m in $machines) { if (-not $procs[$m].HasExited) { $timedOut[$m] = $true; Stop-Process -Id $procs[$m].Id -Force } }
 
 # One row per MacBook that was reachable.
 $rows = foreach ($m in $machines) {
@@ -55,7 +57,7 @@ $rows = foreach ($m in $machines) {
         try { $msg = ($line | ConvertFrom-Json).message; if ($msg) { $err = $msg } } catch {}
       }
     }
-    $row['Notes'] = if ($err) { $err } else { 'speedtest returned no result (or timed out)' }
+    $row['Notes'] = if ($err) { $err } elseif ($timedOut[$m]) { 'timed out after 3 minutes' } else { 'speedtest produced no output' }
     Write-Host "[$m] FAILED: $($row['Notes'])"
   }
   [pscustomobject]$row

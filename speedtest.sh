@@ -23,6 +23,7 @@ for h in $HOSTS; do
     'PATH=/opt/homebrew/bin:/usr/local/bin:$PATH speedtest --accept-license --accept-gdpr -f json' \
     > "$TMP/$h.json" 2> "$TMP/$h.err" &
   PIDS+=($!); NAMES+=("$h")
+  sleep 3    # three seconds apart: still overlapping, but not all hitting the server in the same instant
 done
 ( sleep 180; kill "${PIDS[@]}" 2>/dev/null ) 2>/dev/null & KILLER=$!
 for i in "${!PIDS[@]}"; do
@@ -59,7 +60,7 @@ for h in hosts:
             for line in open(f"{tmp}/{h}.json", errors="replace"):
                 try: err = json.loads(line).get("message") or err
                 except ValueError: pass
-        row[11] = err or "speedtest returned no result (or timed out)"
+        row[11] = err or ("timed out after 3 minutes" if rc in ("143", "137") else "speedtest produced no output")
         print(f"[{h}] FAILED: {row[11]}")
     rows.append(row)
 if not rows:
