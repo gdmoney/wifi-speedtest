@@ -22,9 +22,20 @@ without any build step.
 1. System Settings > General > Sharing > turn on **Remote Login**.
 2. Install Homebrew if the MacBook doesn't have it yet (one command, from
    https://brew.sh), then in Terminal:
-   `brew tap teamookla/speedtest && brew install speedtest`
-3. Note the laptop's name from the Sharing screen (e.g. `wifi-test-01`) and the
-   account name you log in with.
+   `brew tap teamookla/speedtest && brew trust teamookla/speedtest && brew install speedtest`
+   (`brew trust` is required on newer Homebrew before it will install from a
+   third-party tap; on older Homebrew it may say "unknown command", which is
+   fine, just run the install without it.)
+3. On the same Sharing screen, click Edit next to the hostname and rename the
+   laptop to something short and numbered (`wifi-test-01`, `wifi-test-02`, ...).
+   Then turn Wi-Fi off and on again; the new name isn't announced on the
+   network until the Mac reconnects. Put a matching sticker on the lid.
+4. Click the ⓘ next to Remote Login and make sure the account you'll log in
+   with is allowed (either "All users" or listed under "Only these users").
+5. Stop the Mac from sleeping during a session: System Settings > Battery (or
+   Energy) > Options > turn on **Prevent automatic sleeping when the display
+   is off**. During testing keep lids open and chargers plugged in; a sleeping
+   Mac doesn't answer on the network and shows up as `skipped`.
 
 ## Set up the control laptop (once)
 
@@ -140,8 +151,14 @@ deployment > Source: **Deploy from a branch** > Branch: **main**, folder
 - `skipped: Host key verification failed`: the MacBook was reinstalled or
   renamed. Run `ssh-keygen -R name.local` to forget the old key, then
   `ssh login@name.local` once by hand and answer `yes`.
-- `skipped: ... name.local: nodename nor servname provided` (or similar "not
-  found"): the MacBook is on a different subnet. Put its IP in `hosts.txt`
-  instead (System Settings > Wi-Fi > Details).
+- `skipped: ... name.local: nodename nor servname provided`, or on Windows
+  `Could not resolve hostname ... No such host is known`: the MacBook is
+  asleep or on a different subnet. For the latter, put its IP in `hosts.txt`
+  instead (System Settings > Wi-Fi > Details). If names from a
+  Windows control laptop are flaky in general, installing Apple's "Bonjour
+  Print Services for Windows" gives it a proper `.local` resolver.
+- `Connection closed by ... port 22` right after the password prompt: the
+  account isn't allowed Remote Login on that Mac. See step 4 of the MacBook
+  setup.
 - `skipped: Permission denied`: the SSH key wasn't copied to that MacBook, or
   the login name in `hosts.txt` is wrong. Redo the key step for that machine.
