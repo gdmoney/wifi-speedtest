@@ -57,6 +57,17 @@ without any build step.
 On a Mac control laptop, the script needs `python3`. If running it pops up an
 "install the command line developer tools?" dialog, click Install once.
 
+On a Windows control laptop, install **Bonjour Print Services for Windows**
+from Apple (https://support.apple.com/kb/DL999, about 5 MB; run
+`BonjourPSSetup.exe` with the defaults, no reboot needed). Ignore the name and
+the old Windows versions listed on the page: it works on Windows 10 and 11,
+and what it installs is the Bonjour service, which handles `.local` name
+lookups the same way a Mac does. Without it, Windows' built-in lookup is a
+single multicast query that busy conference Wi-Fi drops at random, so
+laptops show up as `skipped: Could not resolve hostname` even when they are
+on and connected. The installer opens UDP 5353 in Windows Firewall for you.
+Check it worked with `ping wifi-test-01.local`.
+
 Then copy your SSH key to each MacBook so the script can log in without a
 password. You'll type each MacBook's password once; after that, no prompts.
 
@@ -157,9 +168,9 @@ deployment > Source: **Deploy from a branch** > Branch: **main**, folder
 - `skipped: ... name.local: nodename nor servname provided`, or on Windows
   `Could not resolve hostname ... No such host is known`: the MacBook is
   asleep or on a different subnet. For the latter, put its IP in `hosts.txt`
-  instead (System Settings > Wi-Fi > Details). If names from a
-  Windows control laptop are flaky in general, installing Apple's "Bonjour
-  Print Services for Windows" gives it a proper `.local` resolver.
+  instead (System Settings > Wi-Fi > Details). If this happens for several
+  laptops at once from a Windows control laptop, Bonjour isn't installed on
+  it; see the control laptop setup.
 - `Connection closed by ... port 22` right after the password prompt: the
   account isn't allowed Remote Login on that Mac. See step 4 of the MacBook
   setup.
