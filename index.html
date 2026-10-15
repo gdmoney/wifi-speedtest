@@ -67,7 +67,7 @@
           <th data-k="down" class="num">Avg down (Mbps)</th>
           <th data-k="up" class="num">Avg up (Mbps)</th>
           <th data-k="total" class="num">Total down (Mbps)</th>
-          <th data-k="ping" class="num">Worst loaded ping (ms)</th>
+          <th data-k="totalUp" class="num">Total up (Mbps)</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -145,10 +145,9 @@
   }
   const trials = [...trialMap.values()].map(t => {
     const good = t.runs.filter(r => r.down != null);
-    const pings = t.runs.flatMap(r => [r.pingDown, r.pingUp]).filter(v => v != null);
     return { ...t, down: mean(good.map(r => r.down)), up: mean(good.map(r => r.up)),
              total: good.length ? good.reduce((s, r) => s + r.down, 0) : null,
-             ping: pings.length ? Math.max(...pings) : null };
+             totalUp: good.length ? good.reduce((s, r) => s + r.up, 0) : null };
   }).sort((a, b) => a.when.localeCompare(b.when));
 
   // Per room.
@@ -223,7 +222,7 @@
     tbody.innerHTML = sorted.map(t => `<tr>
       <td>${t.trial}</td><td>${shortDate(t.when)}</td><td>${t.room}</td>
       <td class="num">${fmt(t.clients)}</td><td class="num">${fmt(t.down, 1)}</td><td class="num">${fmt(t.up, 1)}</td>
-      <td class="num">${fmt(t.total)}</td><td class="num">${fmt(t.ping)}</td></tr>`).join("");
+      <td class="num">${fmt(t.total)}</td><td class="num">${fmt(t.totalUp)}</td></tr>`).join("");
     document.querySelectorAll("#trials th").forEach(th => {
       th.classList.toggle("sorted", th.dataset.k === sortKey);
       th.classList.toggle("asc", th.dataset.k === sortKey && asc);
