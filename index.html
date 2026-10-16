@@ -59,7 +59,7 @@
     <div class="chart"><canvas id="roomsChart"></canvas></div>
 
     <h2>Capacity: total vs. per-client throughput</h2>
-    <p class="sub">Each point is the average of all trials run with that many laptops. A flat total line means the network has hit its ceiling; past that, adding clients only divides the same pie.</p>
+    <p class="sub">Each point is the average of all trials run with that many laptops. The total line is the access point's ceiling: it should stay roughly flat and drift down slightly as clients are added, since more clients mean more contention and management traffic eating airtime. A steep drop means that overhead is significant. The per-client line is what each laptop gets out of that ceiling.</p>
     <div class="chart"><canvas id="capacityChart"></canvas></div>
 
     <h2>Every trial</h2>
