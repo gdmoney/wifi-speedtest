@@ -41,6 +41,7 @@
   .empty { background: var(--card); border-radius: 10px; padding: 24px; color: var(--muted); }
   footer { margin-top: 48px; font-size: 13px; color: var(--muted); }
   a { color: inherit; }
+  select { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
 </style>
 </head>
 <body>
@@ -52,7 +53,9 @@
     <div class="cards" id="cards"></div>
 
     <h2>Download and upload by room</h2>
-    <p class="sub">Average across every laptop run in that room, all trials combined.</p>
+    <p class="sub">Average across every laptop run in that room, for trials with
+      <select id="clientsPick"></select> laptops. Rooms are only comparable at the same load;
+      the Best / Worst room cards above follow this choice.</p>
     <div class="chart"><canvas id="roomsChart"></canvas></div>
 
     <h2>Capacity: total vs. per-client throughput</h2>
@@ -155,23 +158,35 @@
   }).sort((a, b) => a.when.localeCompare(b.when));
 
   // Per room.
-  const roomMap = new Map();
-  for (const r of ok) { if (!roomMap.has(r.room)) roomMap.set(r.room, []); roomMap.get(r.room).push(r); }
-  const rooms = [...roomMap.entries()].map(([room, rs]) => ({ room, down: mean(rs.map(r => r.down)), up: mean(rs.map(r => r.up)), n: rs.length }))
+  // Per room, for a given number of concurrent clients (rooms are only comparable at the same load).
+  const roomsAt = (clients) => {
+    const roomMap = new Map();
+    for (const r of ok.filter(r => r.clients === clients)) { if (!roomMap.has(r.room)) roomMap.set(r.room, []); roomMap.get(r.room).push(r); }
+    return [...roomMap.entries()].map(([room, rs]) => ({ room, down: mean(rs.map(r => r.down)), up: mean(rs.map(r => r.up)), n: rs.length }))
                 .sort((a, b) => b.down - a.down);
+  };
+  const allRooms = new Set(runs.map(r => r.room));
+  // Client counts seen, most common first, for the dropdown.
+  const countTally = new Map();
+  for (const t of trials) if (t.clients != null) countTally.set(t.clients, (countTally.get(t.clients) || 0) + 1);
+  const clientCounts = [...countTally.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0]).map(e => e[0]);
+  let pickedClients = clientCounts[0];
 
-  $("#subtitle").textContent = `${trials.length} trial${trials.length === 1 ? "" : "s"} across ${rooms.length} room${rooms.length === 1 ? "" : "s"}, ` +
+  $("#subtitle").textContent = `${trials.length} trial${trials.length === 1 ? "" : "s"} across ${allRooms.size} room${allRooms.size === 1 ? "" : "s"}, ` +
     `${runs.length} laptop runs. Last test ${trials[trials.length - 1].when}.`;
 
-  // Headline cards.
+  // Headline cards. Best / Worst are judged at the chosen client count.
   const peak = trials.filter(t => t.total != null).sort((a, b) => b.total - a.total)[0];
-  const best = rooms[0], worst = rooms[rooms.length - 1];
   const card = (label, value, note, tone) => `<div class="card ${tone}"><div class="label">${label}</div><div class="value">${value}</div><div class="note">${note}</div></div>`;
-  $("#cards").innerHTML =
-    card("Rooms tested", rooms.length, `${trials.length} trials, ${runs.length} laptop runs`, "slate") +
-    card("Best room", best ? best.room : "–", best ? `${fmt(best.down)} Mbps avg down` : "", "sage") +
-    card("Worst room", worst ? worst.room : "–", worst ? `${fmt(worst.down)} Mbps avg down` : "", "rose") +
-    card("Peak total throughput", peak ? `${fmt(peak.total)} Mbps` : "–", peak ? `${peak.room}, ${peak.clients} clients` : "", "sand");
+  function renderCards(rooms) {
+    const best = rooms[0], worst = rooms[rooms.length - 1];
+    const at = `${fmt(pickedClients)} laptops`;
+    $("#cards").innerHTML =
+      card("Rooms tested", allRooms.size, `${trials.length} trials, ${runs.length} laptop runs`, "slate") +
+      card("Best room", best ? best.room : "–", best ? `${fmt(best.down)} Mbps avg down, ${at}` : `no trials with ${at}`, "sage") +
+      card("Worst room", worst ? worst.room : "–", worst ? `${fmt(worst.down)} Mbps avg down, ${at}` : `no trials with ${at}`, "rose") +
+      card("Peak total throughput", peak ? `${fmt(peak.total)} Mbps` : "–", peak ? `${peak.room}, ${peak.clients} clients` : "", "sand");
+  }
 
   // Charts.
   Chart.defaults.color = css("--muted");
@@ -179,15 +194,28 @@
   Chart.defaults.font.size = 13;
   const grid = css("--line"), accent = css("--accent"), accent2 = css("--accent2");
 
-  new Chart($("#roomsChart"), {
+  const roomsChart = new Chart($("#roomsChart"), {
     type: "bar",
-    data: { labels: rooms.map(r => r.room), datasets: [
-      { label: "Download (Mbps)", data: rooms.map(r => +r.down.toFixed(1)), backgroundColor: accent },
-      { label: "Upload (Mbps)", data: rooms.map(r => +r.up.toFixed(1)), backgroundColor: accent2 },
+    data: { labels: [], datasets: [
+      { label: "Download (Mbps)", data: [], backgroundColor: accent },
+      { label: "Upload (Mbps)", data: [], backgroundColor: accent2 },
     ]},
     options: { maintainAspectRatio: false, plugins: { legend: { position: "bottom" } },
       scales: { y: { beginAtZero: true, grid: { color: grid }, title: { display: true, text: "Mbps" } }, x: { grid: { display: false } } } }
   });
+  function renderRooms() {
+    const rooms = roomsAt(pickedClients);
+    roomsChart.data.labels = rooms.map(r => r.room);
+    roomsChart.data.datasets[0].data = rooms.map(r => +r.down.toFixed(1));
+    roomsChart.data.datasets[1].data = rooms.map(r => +r.up.toFixed(1));
+    roomsChart.update();
+    renderCards(rooms);
+  }
+  const pick = $("#clientsPick");
+  pick.innerHTML = clientCounts.map(c => `<option value="${c}">${c}</option>`).join("");
+  pick.value = pickedClients;
+  pick.addEventListener("change", () => { pickedClients = +pick.value; renderRooms(); });
+  renderRooms();
 
   const byClients = new Map();
   for (const t of trials.filter(t => t.down != null && t.clients != null)) {
