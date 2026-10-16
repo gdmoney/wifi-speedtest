@@ -15,7 +15,7 @@ $now   = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 $trial = Get-Date -Format 'MMdd-HHmmss'    # e.g. 1006-092003 (short enough for chart labels)
 $tmp = (New-Item -ItemType Directory -Force (Join-Path $env:TEMP "speedtest-$trial")).FullName
 
-# Start all MacBooks at once; give up on any that are still running after 3 minutes.
+# Start all MacBooks at once; give up on any that are still running after 90 seconds.
 $remote = 'PATH=/opt/homebrew/bin:/usr/local/bin:$PATH speedtest -f json'
 $procs = @{}
 foreach ($m in $machines) {
@@ -24,7 +24,7 @@ foreach ($m in $machines) {
   $null = $procs[$m].Handle    # without this, Windows PowerShell 5.1 reports ExitCode as null
   Start-Sleep -Seconds 3       # three seconds apart: still overlapping, but not all hitting the server in the same instant
 }
-$procs.Values | Wait-Process -Timeout 180 -ErrorAction SilentlyContinue
+$procs.Values | Wait-Process -Timeout 90 -ErrorAction SilentlyContinue
 $timedOut = @{}
 foreach ($m in $machines) { if (-not $procs[$m].HasExited) { $timedOut[$m] = $true; Stop-Process -Id $procs[$m].Id -Force } }
 
@@ -57,7 +57,7 @@ $rows = foreach ($m in $machines) {
         try { $msg = ($line | ConvertFrom-Json).message; if ($msg) { $err = $msg } } catch {}
       }
     }
-    $row['Notes'] = if ($err) { $err } elseif ($timedOut[$m]) { 'timed out after 3 minutes' } else { 'speedtest produced no output' }
+    $row['Notes'] = if ($err) { $err } elseif ($timedOut[$m]) { 'timed out after 90 seconds' } else { 'speedtest produced no output' }
     Write-Host "[$m] FAILED: $($row['Notes'])"
   }
   [pscustomobject]$row

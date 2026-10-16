@@ -161,7 +161,7 @@ deployment > Source: **Deploy from a branch** > Branch: **main**, folder
   MacBook (off, not on the network, or SSH not set up). It gets no row in
   `results.csv`; the rest of the run is fine.
 - A row with blank numbers and an error in Notes means the MacBook was reached
-  but speedtest isn't installed on it, failed, or took longer than 3 minutes.
+  but speedtest isn't installed on it, failed, or took longer than 90 seconds.
 - `skipped: Host key verification failed`: the MacBook was reinstalled or
   renamed. Run `ssh-keygen -R name.local` to forget the old key, then
   `ssh login@name.local` once by hand and answer `yes`.

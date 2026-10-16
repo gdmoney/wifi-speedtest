@@ -16,7 +16,7 @@ TRIAL=$(date '+%m%d-%H%M%S')          # e.g. 1006-092003 (short enough for chart
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
-# Start all laptops at once; give up on any that are still running after 3 minutes.
+# Start all laptops at once; give up on any that are still running after 90 seconds.
 PIDS=(); NAMES=()
 for h in $HOSTS; do
   ssh -o ConnectTimeout=8 -o BatchMode=yes "$h" \
@@ -25,7 +25,7 @@ for h in $HOSTS; do
   PIDS+=($!); NAMES+=("$h")
   sleep 3    # three seconds apart: still overlapping, but not all hitting the server in the same instant
 done
-( sleep 180; kill "${PIDS[@]}" 2>/dev/null ) 2>/dev/null & KILLER=$!
+( sleep 90; kill "${PIDS[@]}" 2>/dev/null ) 2>/dev/null & KILLER=$!
 for i in "${!PIDS[@]}"; do
   wait "${PIDS[$i]}" && rc=0 || rc=$?
   echo "$rc" > "$TMP/${NAMES[$i]}.rc"      # 255 = ssh could not connect
@@ -60,7 +60,7 @@ for h in hosts:
             for line in open(f"{tmp}/{h}.json", errors="replace"):
                 try: err = json.loads(line).get("message") or err
                 except ValueError: pass
-        row[11] = err or ("timed out after 3 minutes" if rc in ("143", "137") else "speedtest produced no output")
+        row[11] = err or ("timed out after 90 seconds" if rc in ("143", "137") else "speedtest produced no output")
         print(f"[{h}] FAILED: {row[11]}")
     rows.append(row)
 if not rows:
